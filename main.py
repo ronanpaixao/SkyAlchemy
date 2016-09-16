@@ -28,7 +28,6 @@ import rthook
 from qtpy import QtCore, QtGui, QtWidgets, uic
 
 import six
-from bethlib import tesfive
 
 #%% Global functions
 # PyInstaller utilities
@@ -189,7 +188,7 @@ class WndMain(QtWidgets.QMainWindow):
     ### Core functionality
     def open_savegame(filename):
         filename = osp.join(self.savedir, filename)
-        pex = tesfive.PEX.read(filename)
+
 
 
 #%% Main execution
