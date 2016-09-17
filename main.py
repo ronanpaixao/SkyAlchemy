@@ -186,7 +186,7 @@ class WndMain(QtWidgets.QMainWindow):
         open_savegame(item.text())
 
     ### Core functionality
-    def open_savegame(filename):
+    def open_savegame(self, filename):
         filename = osp.join(self.savedir, filename)
 
 
