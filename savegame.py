@@ -33,6 +33,7 @@ _types = {
     "int32": struct.Struct('i'),
     "uint64": struct.Struct('Q'),
     "float32": struct.Struct('f'),
+    "float": struct.Struct('f'),
 }
 
 
@@ -49,6 +50,21 @@ def read_wstring(f):
     size = unpack("uint16", f)
     return f.read(size).decode('cp1252')
 _types["wstring"] = read_wstring
+
+#%% vsval
+def vsval(f):
+    b1 = unpack("uint8", f)
+    length = b1 & 0x3
+    if length == 0:
+        return b1 >> 2
+    elif length == 1:
+        return (b1 | (unpack("uint8", f) << 8)) >> 2
+    elif length == 2:
+        return (b1 | (unpack("uint8", f) << 8) | (unpack("uint8", f) << 16)) >> 2
+    else:
+        raise NotImplementedError("vsval type {} found: 0x{:x}".format(length, b1))
+_types["vsval"] = vsval
+assert vsval(StringIO(struct.pack("BB", 0xe1, 0x13))) == 0x4f8
 
 
 #%% filetime
@@ -93,14 +109,82 @@ def read_miscStats(f):
     return [Stat(f) for i in range(count)]
 _types["miscStat"] = read_miscStats
 
+#%% RefID
+class RefID(object):
+    formid = {}
+    defaultid = {}
+    createdid = {}
+    def __init__(self, fd):
+#        fd = StringIO(struct.pack("BBB", 0x41, 0xc0, 0xf2))
+        first = unpack("uint8", fd)
+        rest = struct.Struct('>H').unpack(fd.read(2))[0]
+        type_ = first >> 6
+        self.value = (first & 0x3f) << 16 ^ rest
+        if type_ == 0:
+            self.name = self.formid.get(self.value, "Unknown")
+        elif type_ == 1:
+            self.name = self.defaultid.get(self.value, "Unknown")
+        elif type_ == 2:
+            self.name = self.createdid.get(self.value, "Unknown")
+        elif type_ == 3:
+            self.name = "Unknown"
+        self.type = {0: "F", 1: "D", 2: "C", 3: "U"}[type_]
+
+    def __repr__(self):
+        return "RefID<{}:{:08X} = {}>".format(self.type, self.value, self.name)
+_types["RefID"] = RefID
 
 #%% Created objects
+class EnchInfo(object):
+    def __init__(self, f):
+        self.magnitude = unpack("float", f)
+        self.duration = unpack("uint32", f)
+        self.area = unpack("uint32", f)
 
-#def read_createdObjects(f):
-#    weaponCount = unpack("uint32", f)
-#    weapons = [Enchantment(f) for i in range(weaponCount)]
-#    return [weapons, armour, potion, poison]
-#_types["createdObjects"] = read_createdObjects
+    def __repr__(self):
+        return "EnchInfo<mag={}, dur={}, area={}>".format(self.magnitude,
+                                              self.duration,
+                                              self.area)
+_types["EnchInfo"] = EnchInfo
+
+class MagicEffect(object):
+    def __init__(self, f):
+        self.refID = unpack("RefID", f)
+        self.info = unpack("EnchInfo", f)
+        self.price = unpack("float", f)
+
+    def __repr__(self):
+        return "MagicEffect<{}:{} = {}>".format(self.refID,
+                                              self.info,
+                                              self.price)
+_types["MagicEffect"] = MagicEffect
+
+class Enchantment(object):
+    def __init__(self, f):
+        self.refID = unpack("RefID", f)
+        self.timesUsed = unpack("uint32", f)
+        count = unpack("vsval", f)
+        self.effects = [unpack("MagicEffect", f) for i in range(count)]
+
+    def __repr__(self):
+        return "Enchantment<{} x{}: {}>".format(self.refID,
+                                              self.timesUsed,
+                                              self.effects)
+_types["Enchantment"] = Enchantment
+
+def read_CreatedObjects(f):
+    weaponCount = unpack("vsval", f)
+    weapons = [Enchantment(f) for i in range(weaponCount)]
+    armourCount = unpack("vsval", f)
+    armours = [Enchantment(f) for i in range(armourCount)]
+    potionCount = unpack("vsval", f)
+    potions = [Enchantment(f) for i in range(potionCount)]
+#    from IPython import embed; embed()
+    poisonCount = unpack("vsval", f)
+    poisons = [Enchantment(f) for i in range(poisonCount)]
+    return {"weapons": weapons, "armours": armours, "potions": potions,
+            "poisons": poisons}
+_types["CreatedObjects"] = read_CreatedObjects
 
 #%% Ingredient Shared
 #class Stat(object):
@@ -139,7 +223,7 @@ _gdata_type_names = {
     1: ("Player Location", lambda f: "Not implemented"),
     2: ("TES", lambda f: "Not implemented"),
     3: ("Global Variables", lambda f: "Not implemented"),
-    4: ("Created Objects", lambda f: "Not implemented"),
+    4: ("Created Objects", read_CreatedObjects),
     5: ("Effects", lambda f: "Not implemented"),
     6: ("Weather", lambda f: "Not implemented"),
     7: ("Audio", lambda f: "Not implemented"),
@@ -214,7 +298,7 @@ class Savegame(object):
             # Back to file
             d['screenshotData'] = f.read(3*d['shotWidth']*d['shotHeight'])
             from PIL import Image
-            screenshot = Image.frombytes("RGB",
+            d['screenshotImage'] = Image.frombytes("RGB",
                                          (d['shotWidth'], d['shotHeight']),
                                          d['screenshotData'])
             d['formVersion'] = unpack("uint8", f)
@@ -271,5 +355,5 @@ class Savegame(object):
             # EOF
             assert(f.read() == "")
 
-
+sg = Savegame(filename)
 
