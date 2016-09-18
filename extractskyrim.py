@@ -98,27 +98,42 @@ if not osp.exists(lstrings_file):
 
 #%% Data
 f = open(data_filename, 'rb')
+
+#%% Field
+class Field(object):
+    def __init__(self, f):
+        self.type = f.read(4)
+        size = unpack("uint16", f)
+        self.data = f.read(size)
+
+    def __repr__(self):
+        return "Field<{}>".format(self.type)
+_types["Field"] = Field
+
 #%%
 class Record(object):
     def __init__(self, fd, type_):
         self.type = type_
         self.size = unpack("uint32", fd)
-        if type_ == "GRUP":
-            self.label = fd.read(4).decode("cp1252")
-            self.groupType = unpack("int32", fd)
-            self.stamp = unpack("uint16", fd)
-            unpack("uint16", fd)  # Unknown
-            self.version = unpack("uint16", fd)
-            unpack("uint16", fd)  # Unknown
-#            children = []
-#            group_end = fd.tell() + self.size - 24
-#            while fd.tell() < group_end:
-#                type_ = f.read(4).decode("cp1252")
-#                children.append(Record(fd, type_))
-#            self.children = children
-#            self.data = fd.read(self.size - 24)
-            fd.seek(fd.tell() + self.size - 24)
-            return
+#        if type_ == "GRUP":
+#            self.label = fd.read(4).decode("cp1252")
+#            self.groupType = unpack("int32", fd)
+#            self.stamp = unpack("uint16", fd)
+#            unpack("uint16", fd)  # Unknown
+#            self.version = unpack("uint16", fd)
+#            unpack("uint16", fd)  # Unknown
+##            children = []
+##            group_end = fd.tell() + self.size - 24
+##            while fd.tell() < group_end:
+##                type_ = f.read(4).decode("cp1252")
+##                children.append(Record(fd, type_))
+##            self.children = children
+##            self.data = fd.read(self.size - 24)
+#            if self.label in _read_record_types:
+#                data = StringIO(fd.read(self.size - 24))
+#            else:  # skip
+#                fd.seek(fd.tell() + self.size - 24)
+#            return
         self.flags = unpack("uint32", fd)
         self.id = unpack("uint32", fd)
         self.revision = unpack("uint32", fd)
@@ -127,25 +142,128 @@ class Record(object):
         if self.flags & 0x00040000:  # Data is compressed
             decompSize = unpack("uint32", fd)
             compData = fd.read(self.size - 4)
-            self.data = zlib.decompress(compData, 0, decompSize)
+            data = zlib.decompress(compData, 0, decompSize)
+            self.size = decompSize
         else:
-            self.data = fd.read(self.size)
+            data = fd.read(self.size)
+        data = StringIO(data)
+        fields = []
+        while data.tell() < self.size:
+            fields.append(Field(data))
+        self.fields = fields
     def __repr__(self):
         if self.type == "GRUP":
             return "{}:{}".format(self.type, self.label)
         return self.type
 
 
+class Effect(object):
+    def __init__(self, fd):
+        self.EffectID = unpack("formid", fd)
+        self.Magnitude = unpack("float", fd)
+        self.AreaOfEffect = unpack("uint32", fd)
+        self.Duration = unpack("uint32", fd)
+
+    def cost(self):
+        try:
+            return (db['MGEF'][self.EffectID].BaseCost *
+                    (self.Magnitude * self.Duration / 10) ** 1.1)
+        except:
+            return -1
+
+    def __repr__(self):
+        return "Field<{}>".format(self.type)
+_types["Field"] = Field
+
+
+class INGR(Record):
+    def __init__(self, fd, type_="INGR"):
+        super(INGR, self).__init__(fd, type_)
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DATA":
+                self.Value = unpack("uint32", field.data[:4])
+                self.Weight = unpack("float", field.data[4:])
+            # Effects
+            # TODO: continue
+        db['INGR']
+
+    def __repr__(self):
+        return "INGR<{:08X}>".format(self.id)
+
+_types["INGR"] = INGR
+
+
+class MGEF(Record):
+    def __init__(self, fd, type_="INGR"):
+        super(INGR, self).__init__(fd, type_)
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DATA":
+                self.Value = unpack("uint32", field.data[:4])
+                self.Weight = unpack("float", field.data[4:])
+            # Effects
+            # TODO: continue
+
+
+    def __repr__(self):
+        return "MGEF<{:08X}>".format(self.id)
+_types["MGEF"] = MGEF
+
+
+class Group(object):
+    def __init__(self, fd, type_="GRUP"):
+        self.type = type_
+        self.size = unpack("uint32", fd)
+        group_end = fd.tell() + self.size - 24
+        self.label = fd.read(4).decode("cp1252")
+        self.groupType = unpack("int32", fd)
+        self.stamp = unpack("uint16", fd)
+        unpack("uint16", fd)  # Unknown
+        self.version = unpack("uint16", fd)
+        unpack("uint16", fd)  # Unknown
+        records = []
+        if self.label in _read_record_types:  # Only read some groups
+            while fd.tell() < group_end:
+                type_ = f.read(4).decode("cp1252")
+#                data = StringIO(fd.read(self.size - 24))
+
+                if type_ == "":  # EOF
+                    break
+                record = _read_record_types[type_](fd, type_)
+                records.append(record)
+            self.records = records
+        else:  # skip uninteresting groups
+            fd.seek(fd.tell() + self.size - 24)
+    def __repr__(self):
+        if self.type == "GRUP":
+            return "{}:{}".format(self.type, self.label)
+        return self.type
+
+_read_record_types = {'INGR': INGR, 'GRUP': Group}
+
 f.seek(0)
 records = []
 i = 0
+import sys
 while True:
     type_ = f.read(4).decode("cp1252")
 #    if i == 10:
 #        break
-    if type_ == b"":  # EOF
+    if type_ == "":  # EOF
         break
-    record = Record(f, type_)
+    if type_ == "GRUP":
+        record = Group(f)
+    else:
+        record = Record(f, type_)
     records.append(record)
     print i, record, f.tell()
+    sys.stdout.flush()
     i += 1
+
