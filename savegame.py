@@ -28,40 +28,7 @@ from datetime import datetime
 from skyrimtypes import _types, unpack
 
 
-#%% wstring
-def read_wstring(f):
-    size = unpack("uint16", f)
-    return f.read(size).decode('cp1252')
-_types["wstring"] = read_wstring
 
-#%% vsval
-def vsval(f):
-    b1 = unpack("uint8", f)
-    length = b1 & 0x3
-    if length == 0:
-        return b1 >> 2
-    elif length == 1:
-        return (b1 | (unpack("uint8", f) << 8)) >> 2
-    elif length == 2:
-        return (b1 | (unpack("uint8", f) << 8) | (unpack("uint8", f) << 16)) >> 2
-    else:
-        raise NotImplementedError("vsval type {} found: 0x{:x}".format(length, b1))
-_types["vsval"] = vsval
-assert vsval(StringIO(struct.pack("BB", 0xe1, 0x13))) == 0x4f8
-
-
-#%% filetime
-_EPOCH_AS_FILETIME = 116444736000000000
-_HUNDREDS_OF_NANOSECONDS = 10000000
-
-def read_filetime(f):
-    ns100_1601 = struct.unpack("<Q", f.read(8))[0]
-    (s, ns100_rem) = divmod(ns100_1601 - _EPOCH_AS_FILETIME,
-                            _HUNDREDS_OF_NANOSECONDS)
-    dt = datetime.utcfromtimestamp(s)
-    dt = dt.replace(microsecond=(ns100_rem // 10))
-    return dt
-_types["filetime"] = read_filetime
 
 #%% stats
 _stat_categories = {
@@ -92,30 +59,6 @@ def read_miscStats(f):
     return [Stat(f) for i in range(count)]
 _types["miscStat"] = read_miscStats
 
-#%% RefID
-class RefID(object):
-    formid = {}
-    defaultid = {}
-    createdid = {}
-    def __init__(self, fd):
-#        fd = StringIO(struct.pack("BBB", 0x41, 0xc0, 0xf2))
-        first = unpack("uint8", fd)
-        rest = struct.Struct('>H').unpack(fd.read(2))[0]
-        type_ = first >> 6
-        self.value = (first & 0x3f) << 16 ^ rest
-        if type_ == 0:
-            self.name = self.formid.get(self.value, "Unknown")
-        elif type_ == 1:
-            self.name = self.defaultid.get(self.value, "Unknown")
-        elif type_ == 2:
-            self.name = self.createdid.get(self.value, "Unknown")
-        elif type_ == 3:
-            self.name = "Unknown"
-        self.type = {0: "F", 1: "D", 2: "C", 3: "U"}[type_]
-
-    def __repr__(self):
-        return "RefID<{}:{:08X} = {}>".format(self.type, self.value, self.name)
-_types["RefID"] = RefID
 
 #%% Created objects
 class EnchInfo(object):
@@ -183,22 +126,6 @@ _types["CreatedObjects"] = read_CreatedObjects
 #                                              self.name,
 #                                              self.value)
 
-#%% Form ID
-class FormID(object):
-    def __init__(self, f):
-        self.name = unpack("wstring", f)
-        self.category = unpack("uint8", f)
-        self.category_name = _stat_categories[self.category]
-        self.value = unpack("uint32", f)
-
-    def __repr__(self):
-        return "FormID<>".format()
-
-
-#def read_formIDs(f):
-#    count = unpack("uint32", f)
-#    return [Stat(f) for i in range(count)]
-_types["formID"] = FormID
 
 #%% global data
 _gdata_type_names = {
