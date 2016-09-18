@@ -25,24 +25,7 @@ from datetime import datetime
 
 
 #%% unpack
-_types = {
-    "bool": struct.Struct('?'),
-    "uint8": struct.Struct('B'),
-    "uint16": struct.Struct('H'),
-    "uint32": struct.Struct('I'),
-    "int32": struct.Struct('i'),
-    "uint64": struct.Struct('Q'),
-    "float32": struct.Struct('f'),
-    "float": struct.Struct('f'),
-}
-
-
-def unpack(type, f):
-    type = _types[type]
-    if callable(type):
-        return type(f)
-    else:
-        return type.unpack(f.read(type.size))[0]
+from skyrimtypes import _types, unpack
 
 
 #%% wstring
@@ -338,6 +321,7 @@ class Savegame(object):
             gdata3 = []
             for i in range(globalDataTable3Count):
                 gdata3.append(unpack("globalData", f))
+            d['gdata'] = gdata1 + gdata2 + gdata3
             # formID
             f.seek(formIDArrayCountOffset)
             formIDArrayCount = unpack("uint32", f)
@@ -354,6 +338,7 @@ class Savegame(object):
             assert(len(f.read()) == ukt3count)
             # EOF
             assert(f.read() == "")
+            self.d = d
 
 sg = Savegame(filename)
 

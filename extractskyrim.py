@@ -22,6 +22,8 @@ import re
 import os
 import os.path as osp
 
+from skyrimtypes import _types, unpack
+
 
 #%% Find Skyrim folder
 with open(r"C:\Program Files (x86)\Steam\SteamApps\libraryfolders.vdf") as f:
@@ -41,50 +43,6 @@ if folder is None:
     raise RuntimeError("Could not find Skyrim folder")
 
 filename = osp.join(folder, "Data", "Skyrim.esm")
-
-#%% unpack
-_types = {
-    "bool": struct.Struct('?'),
-    "uint8": struct.Struct('B'),
-    "uint16": struct.Struct('H'),
-    "uint32": struct.Struct('I'),
-    "int32": struct.Struct('i'),
-    "uint64": struct.Struct('Q'),
-    "float32": struct.Struct('f'),
-    "float": struct.Struct('f'),
-}
-
-
-def unpack(type, f):
-    type = _types[type]
-    if callable(type):
-        return type(f)
-    else:
-        return type.unpack(f.read(type.size))[0]
-
-
-#%% wstring
-def read_wstring(f):
-    size = unpack("uint16", f)
-    return f.read(size).decode('cp1252')
-_types["wstring"] = read_wstring
-
-#%% vsval
-def vsval(f):
-    b1 = unpack("uint8", f)
-    length = b1 & 0x3
-    if length == 0:
-        return b1 >> 2
-    elif length == 1:
-        return (b1 | (unpack("uint8", f) << 8)) >> 2
-    elif length == 2:
-        return (b1 | (unpack("uint8", f) << 8) | (unpack("uint8", f) << 16)) >> 2
-    else:
-        raise NotImplementedError("vsval type {} found: 0x{:x}".format(length, b1))
-_types["vsval"] = vsval
-assert vsval(StringIO(struct.pack("BB", 0xe1, 0x13))) == 0x4f8
-
-
 f = open(filename, 'rb')
 #%%
 class Record(object):
