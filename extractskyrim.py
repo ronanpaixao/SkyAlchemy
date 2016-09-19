@@ -272,28 +272,41 @@ class Group(object):
 
 _read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF}
 
-f.seek(0)
-records = []
-i = 0
-import sys
-while True:
-    type_ = f.read(4).decode("cp1252")
-#    if i == 10:
-#        break
-    if type_ == "":  # EOF
-        break
-    if type_ == "GRUP":
-        record = Group(f)
-    else:
-        record = Record(f, type_)
-    records.append(record)
-    print i, record, f.tell()
-    sys.stdout.flush()
-    i += 1
 
-f.close()
+if osp.exists("data.pkl"):
+    with open('data.pkl', 'rb') as f:
+        db = cPickle.load(f)
+else:
+    db = {k: {} for k in db_types}
 
-#%% Save data
-with open('data.pkl', 'wb') as f:
-    cPickle.dump(db, f)
+#%% Execution
+if __name__ == "__main__":
+    f = open(data_filename, 'rb')
+    f.seek(0)
+    records = []
+    i = 0
+    import sys
+    while True:
+        type_ = f.read(4).decode("cp1252")
+    #    if i == 10:
+    #        break
+        if type_ == "":  # EOF
+            break
+        if type_ == "GRUP":
+            record = Group(f)
+        else:
+            record = Record(f, type_)
+        records.append(record)
+        print i, record, f.tell()
+        sys.stdout.flush()
+        i += 1
 
+    f.close()
+
+    #%% Save data
+    with open('data.pkl', 'wb') as f:
+        cPickle.dump(db, f)
+
+    #%%
+    print records[27].records[0]
+    print db['INGR'][0x001016B3].effects
