@@ -190,7 +190,7 @@ class INGR(Record):
                 last_effect = self.effects[-1]
                 last_effect.Magnitude = unpack("float", field.data[:4])
                 last_effect.AreaOfEffect = unpack("uint32", field.data[4:8])
-                last_effect.Duration = unpack("uint32", field.data[:4])
+                last_effect.Duration = unpack("uint32", field.data[8:])
         db['INGR'][self.id] = self
 
     def __repr__(self):
