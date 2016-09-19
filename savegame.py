@@ -113,18 +113,11 @@ def read_CreatedObjects(f):
 _types["CreatedObjects"] = read_CreatedObjects
 
 #%% Ingredient Shared
-#class Stat(object):
-#    def __init__(self, f):
-#        self.name = unpack("wstring", f)
-#        self.category = unpack("uint8", f)
-#        self.category_name = _stat_categories[self.category]
-#        self.value = unpack("uint32", f)
-#
-#    def __repr__(self):
-#        return "Stat<{}({}):{} = {})>".format(self.category_name,
-#                                              self.category,
-#                                              self.name,
-#                                              self.value)
+def read_IngredientsShared(f):
+    count = unpack("uint32", f)
+    print "INGSHARED", count
+    return [(unpack("RefID", f), unpack("RefID", f)) for i in range(count)]
+
 
 
 #%% global data
@@ -150,7 +143,7 @@ _gdata_type_names = {
     109: ("Magic Favorites", lambda f: "Not implemented"),
     110: ("PlayerControls", lambda f: "Not implemented"),
     111: ("Story Event Manager", lambda f: "Not implemented"),
-    112: ("Ingredient Shared", lambda f: "Not implemented"),
+    112: ("Ingredient Shared", read_IngredientsShared),
     113: ("MenuControls", lambda f: "Not implemented"),
     114: ("MenuTopicManager", lambda f: "Not implemented"),
     1000: ("Temp Effects", lambda f: "Not implemented"),
