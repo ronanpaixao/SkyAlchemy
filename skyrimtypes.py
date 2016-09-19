@@ -21,6 +21,7 @@ import zlib
 import re
 import os
 import os.path as osp
+import cPickle
 
 
 #%% unpack
@@ -73,9 +74,9 @@ _types["wstring"] = wstring
 def zstring(f):
     if isinstance(f, str) or isinstance(f, bytes):
         try:
-            return f.decode('utf8')
+            return f[:-1].decode('utf8')
         except:
-            return f.decode('cp1252')
+            return f[:-1].decode('cp1252')
     bs = []
     b = f.read(1)
     while b != b'\x00':
