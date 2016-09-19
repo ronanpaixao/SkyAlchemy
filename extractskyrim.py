@@ -114,7 +114,7 @@ _types["Field"] = Field
 class Record(object):
     def __init__(self, fd, type_):
         self.type = type_
-        self.size = unpack("uint32", fd)
+        dataSize = unpack("uint32", fd)
 #        if type_ == "GRUP":
 #            self.label = fd.read(4).decode("cp1252")
 #            self.groupType = unpack("int32", fd)
@@ -138,17 +138,17 @@ class Record(object):
         self.id = unpack("uint32", fd)
         self.revision = unpack("uint32", fd)
         self.version = unpack("uint16", fd)
-        self.unknown = unpack("uint16", fd)
+        unpack("uint16", fd)  # Unknown
         if self.flags & 0x00040000:  # Data is compressed
             decompSize = unpack("uint32", fd)
-            compData = fd.read(self.size - 4)
+            compData = fd.read(dataSize - 4)
             data = zlib.decompress(compData, 0, decompSize)
-            self.size = decompSize
+            dataSize = decompSize
         else:
-            data = fd.read(self.size)
+            data = fd.read(dataSize)
         data = StringIO(data)
         fields = []
-        while data.tell() < self.size:
+        while data.tell() < dataSize:
             fields.append(Field(data))
         self.fields = fields
     def __repr__(self):
@@ -158,11 +158,8 @@ class Record(object):
 
 
 class Effect(object):
-    def __init__(self, fd):
-        self.EffectID = unpack("formid", fd)
-        self.Magnitude = unpack("float", fd)
-        self.AreaOfEffect = unpack("uint32", fd)
-        self.Duration = unpack("uint32", fd)
+    def __init__(self, id_):
+        self.EffectID = id_
 
     def cost(self):
         try:
@@ -187,33 +184,60 @@ class INGR(Record):
             elif field.type == "DATA":
                 self.Value = unpack("uint32", field.data[:4])
                 self.Weight = unpack("float", field.data[4:])
-            # Effects
-            # TODO: continue
-        db['INGR']
+            elif field.type == "EFID":
+                self.effects.append(Effect(unpack("formid", field.data)))
+            elif field.type == "EFIT":
+                last_effect = self.effects[-1]
+                last_effect.Magnitude = unpack("float", field.data[:4])
+                last_effect.AreaOfEffect = unpack("uint32", field.data[4:8])
+                last_effect.Duration = unpack("uint32", field.data[:4])
+        db['INGR'][self.id] = self
 
     def __repr__(self):
-        return "INGR<{:08X}>".format(self.id)
+        return "INGR<{:08X}:{}>".format(self.id, self.FullName)
 
 _types["INGR"] = INGR
 
 
 class MGEF(Record):
-    def __init__(self, fd, type_="INGR"):
-        super(INGR, self).__init__(fd, type_)
+    """Magic Effect.
+
+    Data about magic effects from spells, enchantments and potions.
+
+    Reference:
+        http://en.m.uesp.net/wiki/Tes5Mod:Mod_File_Format/MGEF
+    """
+    def __init__(self, fd, type_="MGEF"):
+        super(MGEF, self).__init__(fd, type_)
+        self.FullName = "Nameless"
         for field in self.fields:
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)
             elif field.type == "FULL":
                 self.FullName = unpack("lstring", field.data)
             elif field.type == "DATA":
-                self.Value = unpack("uint32", field.data[:4])
-                self.Weight = unpack("float", field.data[4:])
-            # Effects
-            # TODO: continue
-
+                fdata = StringIO(field.data)
+                self.Flags = unpack("uint32", fdata)
+                self.BaseCost = unpack("float", fdata)
+                self.RelatedID = unpack("formid", fdata)
+                self.Skill = unpack("int32", fdata)
+                self.ResistanceAV = unpack("uint32", fdata)
+                fdata.read(16)
+                self.SkillLevel = unpack("uint32", fdata)
+                self.Area = unpack("uint32", fdata)
+                self.CastingTime = unpack("float", fdata)
+                fdata.read(12)
+                self.EffectType = unpack("uint32", fdata)
+                self.PrimaryAV = unpack("int32", fdata)
+            elif field.type == "ESCE":
+                self.CounterEffects = unpack("formid", fdata)
+            elif field.type == "DNAM":
+                self.Description = unpack("lstring", fdata)
+        db['MGEF'][self.id] = self
 
     def __repr__(self):
-        return "MGEF<{:08X}>".format(self.id)
+        return "MGEF<{:08X}:{}>".format(self.id, self.FullName)
+
 _types["MGEF"] = MGEF
 
 
@@ -246,7 +270,7 @@ class Group(object):
             return "{}:{}".format(self.type, self.label)
         return self.type
 
-_read_record_types = {'INGR': INGR, 'GRUP': Group}
+_read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF}
 
 f.seek(0)
 records = []
@@ -266,4 +290,10 @@ while True:
     print i, record, f.tell()
     sys.stdout.flush()
     i += 1
+
+f.close()
+
+#%% Save data
+with open('data.pkl', 'wb') as f:
+    cPickle.dump(db, f)
 
