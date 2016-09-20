@@ -17,7 +17,7 @@ import zlib
 
 #%% unpack and data
 from skyrimtypes import _types, unpack
-from extractskyrim import db
+from skyrimdata import db
 
 #%% Stat
 _stat_categories = {
