@@ -30,7 +30,7 @@ db = {k: {} for k in db_types}
 #if 'lstrings' not in locals():
 lstrings = {}
 
-from skyrimtypes import unpack
+from skyrimtypes import unpack, RefID
 
 #%% Fast printing to stdout
 if "print" not in locals():
@@ -103,6 +103,9 @@ def loadData():
         db.update(cPickle.load(f))
     with open(__lstrings_file, 'rb') as f:
         lstrings.update(cPickle.load(f))
+
+    for k, v in db.iteritems():
+        RefID.defaultid.update(v)
 
 #%% Execution
 if __name__ == "__main__":
