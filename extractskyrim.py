@@ -27,7 +27,7 @@ from skyrimtypes import _types, unpack
 
 #%%
 db_types = ['MGEF', 'INGR']
-db = {k: {} for k in db_types}
+
 
 #%% Find Skyrim folder
 with open(r"C:\Program Files (x86)\Steam\SteamApps\libraryfolders.vdf") as f:
@@ -96,9 +96,6 @@ if not osp.exists(lstrings_file):
         cPickle.dump(lstrings, f)
 
 
-#%% Data
-f = open(data_filename, 'rb')
-
 #%% Field
 class Field(object):
     def __init__(self, f):
@@ -110,7 +107,8 @@ class Field(object):
         return "Field<{}>".format(self.type)
 _types["Field"] = Field
 
-#%%
+
+#%% Record
 class Record(object):
     def __init__(self, fd, type_):
         self.type = type_
@@ -160,6 +158,10 @@ class Record(object):
 class Effect(object):
     def __init__(self, id_):
         self.EffectID = id_
+        self.MGEF = db['MGEF'][id_]
+        self.Magnitude = 0
+        self.AreaOfEffect = 0
+        self.Duration = 0
 
     def cost(self):
         try:
@@ -169,13 +171,16 @@ class Effect(object):
             return -1
 
     def __repr__(self):
-        return "Field<{}>".format(self.type)
-_types["Field"] = Field
+        return "Effect<{}, {} pts for {} sec>".format(self.MGEF.FullName,
+            self.Magnitude, self.Duration)
+_types["Effect"] = Effect
 
 
 class INGR(Record):
     def __init__(self, fd, type_="INGR"):
         super(INGR, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Nameless"
         for field in self.fields:
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)

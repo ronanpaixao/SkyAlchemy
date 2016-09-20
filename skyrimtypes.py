@@ -47,14 +47,14 @@ _types = {
 }
 
 
-def unpack(type, f):
-    type = _types[type]
-    if callable(type):
-        return type(f)
+def unpack(type_str, f):
+    type_ = _types[type_str]
+    if callable(type_):
+        return type_(f)
     elif getattr(f, "read", False):  # file-like
-        tup = type.unpack(f.read(type.size))
+        tup = type_.unpack(f.read(type_.size))
     else:  # string-like
-        tup = type.unpack(f)
+        tup = type_.unpack(f)
     if len(tup) == 1:
         return tup[0]
     else:
@@ -141,6 +141,7 @@ class RefID(object):
     formid = {}
     defaultid = {}
     createdid = {}
+    __nameless = "Unknown"
     def __init__(self, fd):
 #        fd = StringIO(struct.pack("BBB", 0x41, 0xc0, 0xf2))
         first = unpack("uint8", fd)
@@ -148,17 +149,20 @@ class RefID(object):
         type_ = first >> 6
         self.value = (first & 0x3f) << 16 ^ rest
         if type_ == 0:
-            self.name = self.formid.get(self.value, "Unknown")
+            self.name = self.formid.get(self.value, self.__nameless)
         elif type_ == 1:
-            self.name = self.defaultid.get(self.value, "Unknown")
+            self.name = self.defaultid.get(self.value, self.__nameless)
         elif type_ == 2:
-            self.name = self.createdid.get(self.value, "Unknown")
+            self.name = self.createdid.get(self.value,self. __nameless)
         elif type_ == 3:
-            self.name = "Unknown"
+            self.name = self.__nameless
         self.type = {0: "F", 1: "D", 2: "C", 3: "U"}[type_]
 
     def __repr__(self):
-        return "RefID<{}:{:08X} = {}>".format(self.type, self.value, self.name)
+        if self.name == self.__nameless:
+            return "RefID<{}:{:08X}>".format(self.type, self.value)
+        else:
+            return "RefID<{}>".format(self.name)
 _types["RefID"] = RefID
 
 
