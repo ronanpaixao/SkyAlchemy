@@ -12,14 +12,8 @@ See LICENSE for details.
 from __future__ import unicode_literals
 
 import struct
-import enum
-from collections import namedtuple, OrderedDict
-from binascii import hexlify
 from cStringIO import StringIO
 from datetime import datetime
-import zlib
-import re
-import os
 import os.path as osp
 import cPickle
 
