@@ -12,24 +12,13 @@ See LICENSE for details.
 from __future__ import unicode_literals
 
 import struct
-import enum
-from collections import namedtuple, OrderedDict
-from binascii import hexlify
+from collections import OrderedDict
 from cStringIO import StringIO
-from datetime import datetime
 
-#try:
-#    from typing import List, Union
-#except ImportError:  # python 3.4 and below
-#    pass
-
-
-#%% unpack
-from skyrimtypes import _types, unpack
-
-
-
-
+#%% unpack and data
+from skyrimtypes import unpack
+import skyrimdata
+skyrimdata.loadData()
 
 
 #%%
