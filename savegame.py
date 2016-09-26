@@ -106,11 +106,11 @@ class Savegame(object):
             # formID
             f.seek(formIDArrayCountOffset)
             formIDArrayCount = unpack("uint32", f)
-            formid = struct.Struct('{}I'.format(formIDArrayCount)).unpack(
+            d['formid'] = struct.Struct('{}I'.format(formIDArrayCount)).unpack(
                 f.read(formIDArrayCount*4))
             # Visited Worldspace
             visitedWorldspaceArrayCount = unpack("uint32", f)
-            visitedWorldspaceArray = struct.Struct('{}I'.format(
+            d['visitedWorldspaceArray'] = struct.Struct('{}I'.format(
                 visitedWorldspaceArrayCount)).unpack(f.read(
                 visitedWorldspaceArrayCount*4))
             # unknownTable3
