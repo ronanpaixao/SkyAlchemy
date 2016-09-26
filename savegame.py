@@ -102,7 +102,7 @@ class Savegame(object):
             gdata3 = []
             for i in range(globalDataTable3Count):
                 gdata3.append(unpack("globalData", f))
-            d['gdata'] = gdata1 + gdata2 + gdata3
+            d['gdata'] = {v[1]:v[2] for v in (gdata1 + gdata2 + gdata3)}
             # formID
             f.seek(formIDArrayCountOffset)
             formIDArrayCount = unpack("uint32", f)
