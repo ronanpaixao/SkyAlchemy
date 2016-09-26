@@ -735,7 +735,7 @@ class MGEF(Record):
     """
     def __init__(self, fd, type_="MGEF"):
         super(MGEF, self).__init__(fd, type_)
-        self.FullName = "Nameless"
+        self.FullName = "Unnamed"
         for field in self.fields:
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)
@@ -767,6 +767,39 @@ class MGEF(Record):
 _types["MGEF"] = MGEF
 
 
+class ALCH(Record):
+    def __init__(self, fd, type_="ALCH"):
+        super(ALCH, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DATA":
+                self.Weight = unpack("float", field.data)
+            elif field.type == "ENIT":
+                self.Value = unpack("uint32", field.data[:4])
+                flags = unpack("uint32", field.data[4:8])
+                flag_bits = {0x1: "ManualCalc", 0x2: "Food",
+                             0x10000: "Medicine", 0x20000: "Poison"}
+                self.Flags = [v for k, v in flag_bits.items() if k & flags]
+            elif field.type == "EFID":
+                self.effects.append(Effect(unpack("formid", field.data)))
+            elif field.type == "EFIT":
+                last_effect = self.effects[-1]
+                last_effect.Magnitude = unpack("float", field.data[:4])
+                last_effect.AreaOfEffect = unpack("uint32", field.data[4:8])
+                last_effect.Duration = unpack("uint32", field.data[8:])
+        db['ALCH'][self.id] = self
+
+    def __repr__(self):
+        return "ALCH<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["ALCH"] = ALCH
+
+#%% Group
 class Group(object):
     def __init__(self, fd, type_="GRUP"):
         self.type = type_
@@ -796,4 +829,4 @@ class Group(object):
             return "{}:{}".format(self.type, self.label)
         return self.type
 
-_read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF}
+_read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH}

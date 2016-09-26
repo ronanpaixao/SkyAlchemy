@@ -20,7 +20,7 @@ from cStringIO import StringIO
 
 
 #%% Data records to store
-db_types = ['MGEF', 'INGR']
+db_types = ['MGEF', 'INGR', 'ALCH']
 # Only load once
 #if 'db' not in locals():
 #    print("db not in locals!")
