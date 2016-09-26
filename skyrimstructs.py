@@ -173,7 +173,42 @@ _types["globalData"] = read_globalData
 
 
 #%% Change Form
-#ingr = None
+_ChangeForm_flags = {
+    "CHANGE_FORM_FLAGS": 0x01,
+    "CHANGE_REFR_MOVE": 0x02,
+    "CHANGE_REFR_HAVOK_MOVE": 0x04,
+    "CHANGE_REFR_CELL_CHANGED": 0x08,
+    "CHANGE_REFR_SCALE": 0x10,
+    "CHANGE_REFR_INVENTORY": 0x20,
+    "CHANGE_REFR_EXTRA_OWNERSHIP": 0x40,
+    "CHANGE_REFR_BASEOBJECT": 0x80,
+    "CHANGE_REFR_PROMOTED": 0x2000000,
+    "CHANGE_REFR_EXTRA_ACTIVATING_CHILDREN": 0x4000000,
+    "CHANGE_REFR_LEVELED_INVENTORY": 0x8000000,
+    "CHANGE_REFR_ANIMATION": 0x10000000,
+    "CHANGE_REFR_EXTRA_ENCOUNTER_ZONE": 0x20000000,
+    "CHANGE_REFR_EXTRA_CREATED_ONLY": 0x40000000,
+    "CHANGE_REFR_EXTRA_GAME_ONLY": 0x80000000,
+    "CHANGE_OBJECT_EXTRA_ITEM_DATA": 0x400,
+    "CHANGE_OBJECT_EXTRA_AMMO": 0x800,
+    "CHANGE_OBJECT_EXTRA_LOCK": 0x1000,
+    "CHANGE_DOOR_EXTRA_TELEPORT": 0x20000,
+    "CHANGE_OBJECT_EMPTY": 0x200000,
+    "CHANGE_OBJECT_OPEN_DEFAULT_STATE": 0x400000,
+    "CHANGE_OBJECT_OPEN_STATE": 0x800000,
+}
+
+extra_data_flags = (_ChangeForm_flags['CHANGE_REFR_EXTRA_OWNERSHIP'] |
+                    _ChangeForm_flags['CHANGE_OBJECT_EXTRA_LOCK'] |
+                    _ChangeForm_flags['CHANGE_REFR_EXTRA_ENCOUNTER_ZONE'] |
+                    _ChangeForm_flags['CHANGE_REFR_EXTRA_GAME_ONLY'] |
+                    _ChangeForm_flags['CHANGE_OBJECT_EXTRA_AMMO'] |
+                    _ChangeForm_flags['CHANGE_DOOR_EXTRA_TELEPORT'] |
+                    _ChangeForm_flags['CHANGE_REFR_PROMOTED'] |
+                    _ChangeForm_flags['CHANGE_REFR_EXTRA_ACTIVATING_CHILDREN'] |
+                    _ChangeForm_flags['CHANGE_OBJECT_EXTRA_ITEM_DATA'])
+
+
 class ChangeForm(object):
     def __init__(self, f):
         self.formid = unpack("RefID", f)
