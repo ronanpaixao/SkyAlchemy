@@ -176,20 +176,3 @@ class RefID(object):
             return "RefID<{}:{:08X}:{}>".format(self.type, self.value, self.name)
 _types["RefID"] = RefID
 
-
-#%% Form ID
-class FormID(object):
-    def __init__(self, f):
-        self.name = unpack("wstring", f)
-        self.category = unpack("uint8", f)
-        self.category_name = _stat_categories[self.category]
-        self.value = unpack("uint32", f)
-
-    def __repr__(self):
-        return "FormID<>".format()
-
-
-#def read_formIDs(f):
-#    count = unpack("uint32", f)
-#    return [Stat(f) for i in range(count)]
-_types["FormID"] = FormID
