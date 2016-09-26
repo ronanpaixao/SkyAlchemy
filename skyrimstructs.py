@@ -265,9 +265,8 @@ class ChangeForm(object):
             # Skip Animation
             # Skip Explosion
 
-#        if self.type == 16:  # INGR
-#            ingr = unpack("INGR", data)
-#            print ingr
+        elif self.type == 16:  # INGR
+            self.d['ingr_data'] = unpack("uint32", data)
 
     def __repr__(self):
         return "ChangeForm<{}>".format(self.formid)
