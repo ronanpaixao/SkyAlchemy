@@ -858,7 +858,6 @@ _types["ENCH"] = ENCH
 class ARMO(Record):
     def __init__(self, fd, type_="ARMO"):
         super(ARMO, self).__init__(fd, type_)
-        self.effects = []
         self.FullName = "Unnamed"
         for field in self.fields:
             if field.type == "EDID":
@@ -886,6 +885,56 @@ class ARMO(Record):
         return "ARMO<{:08X}:{}>".format(self.id, self.FullName)
 
 _types["ARMO"] = ARMO
+
+
+class MISC(Record):
+    def __init__(self, fd, type_="MISC"):
+        super(MISC, self).__init__(fd, type_)
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DATA":
+                self.cost = unpack("uint32", field.data[:4])
+                self.Weight = unpack("float", field.data[4:])
+        db['MISC'][self.id] = self
+
+    def __repr__(self):
+        return "MISC<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["MISC"] = MISC
+
+
+class SCRL(Record):
+    def __init__(self, fd, type_="SCRL"):
+        super(SCRL, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DESC":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DATA":
+                self.cost = unpack("uint32", field.data[:4])
+                self.Weight = unpack("float", field.data[4:])
+            elif field.type == "EFID":
+                self.effects.append(Effect(unpack("formid", field.data)))
+            elif field.type == "EFIT":
+                last_effect = self.effects[-1]
+                last_effect.Magnitude = unpack("float", field.data[:4])
+                last_effect.AreaOfEffect = unpack("uint32", field.data[4:8])
+                last_effect.Duration = unpack("uint32", field.data[8:])
+        db['SCRL'][self.id] = self
+
+    def __repr__(self):
+        return "SCRL<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["SCRL"] = SCRL
 
 #%% Group
 class Group(object):
@@ -918,4 +967,4 @@ class Group(object):
         return self.type
 
 _read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH,
-                      'ENCH': ENCH, 'ARMO': ARMO}
+                      'ENCH': ENCH, 'ARMO': ARMO, 'MISC': MISC, 'SCRL': SCRL}
