@@ -268,6 +268,17 @@ class ChangeForm(object):
         elif self.type == 16:  # INGR
             self.d['ingr_data'] = unpack("uint32", data)
 
+        elif self.type == 1 and self.formid.value == 0x14:  # Player ACHR
+            sdata = StringIO(data)
+            sdata.seek(829)
+            itemcount = unpack("vsval", sdata)
+#            inventory = []
+            #for i in range(itemcount):
+            #    print(i, hex(sdata.tell()))
+            #    inventory.append(unpack("InventoryItem", sdata))
+
+            self.d['inventory'] = [unpack("InventoryItem", sdata) for i in range(itemcount)]
+
     def __repr__(self):
         return "ChangeForm<{}>".format(self.formid)
 

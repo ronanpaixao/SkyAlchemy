@@ -119,6 +119,15 @@ class Savegame(object):
             assert(len(f.read()) == ukt3count)
             # EOF
             assert(f.read() == "")
+            # Inventory
+            for cf in sg.d['changeforms']:
+                if cf.type == 1 and cf.formid.value == 0x14:
+                    break
+            sdata = StringIO(cf.data)
+            sdata.seek(829)
+            itemcount = unpack("vsval", sdata)
+            d['inventory'] = [unpack("InventoryItem", sdata) for i in range(itemcount)]
+
             self.d = d
 
 sg = Savegame(filename)
