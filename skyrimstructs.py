@@ -918,7 +918,7 @@ class SCRL(Record):
             elif field.type == "FULL":
                 self.FullName = unpack("lstring", field.data)
             elif field.type == "DESC":
-                self.FullName = unpack("lstring", field.data)
+                self.Description = unpack("lstring", field.data)
             elif field.type == "DATA":
                 self.cost = unpack("uint32", field.data[:4])
                 self.Weight = unpack("float", field.data[4:])
