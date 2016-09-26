@@ -16,7 +16,7 @@ import zlib
 
 
 #%% unpack and data
-from skyrimtypes import _types, unpack
+from skyrimtypes import _types, unpack, RefID
 from skyrimdata import db
 
 #%% Stat
@@ -96,6 +96,7 @@ _types["MagicEffect"] = MagicEffect
 class Enchantment(object):
     def __init__(self, f):
         self.refID = unpack("RefID", f)
+        RefID.createdid[self.refID.value] = self
         self.timesUsed = unpack("uint32", f)
         count = unpack("vsval", f)
         self.effects = [unpack("MagicEffect", f) for i in range(count)]
