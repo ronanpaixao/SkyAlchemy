@@ -94,7 +94,9 @@ class Savegame(object):
             for i in range(globalDataTable2Count):
                 gdata2.append(unpack("globalData", f))
             # changeForms
-            # ...
+            f.seek(changeFormsOffset)
+            d['changeforms'] = [unpack("ChangeForm", f) for i in
+                range(changeFormCount)]
             # Global Data 3
             f.seek(globalDataTable3Offset)
             gdata3 = []
