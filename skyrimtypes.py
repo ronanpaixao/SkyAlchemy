@@ -148,28 +148,32 @@ class RefID(object):
     formid = {}
     defaultid = {}
     createdid = {}
-    __nameless = "Unknown"
+    __nameless = None
     def __init__(self, fd):
 #        fd = StringIO(struct.pack("BBB", 0x41, 0xc0, 0xf2))
         first = unpack("uint8", fd)
         rest = struct.Struct('>H').unpack(fd.read(2))[0]
-        type_ = first >> 6
+        self.type_ = first >> 6
         self.value = (first & 0x3f) << 16 ^ rest
-        if type_ == 0:
-            self.name = self.formid.get(self.value, self.__nameless)
-        elif type_ == 1:
-            self.name = self.defaultid.get(self.value, self.__nameless)
-        elif type_ == 2:
-            self.name = self.createdid.get(self.value,self. __nameless)
-        elif type_ == 3:
-            self.name = self.__nameless
-        self.type = {0: "F", 1: "D", 2: "C", 3: "U"}[type_]
+        self.type = {0: "F", 1: "D", 2: "C", 3: "U"}[self.type_]
+
+    @property
+    def name(self):
+        if self.type_ == 0:
+            return self.formid.get(self.value, self.__nameless)
+        elif self.type_ == 1:
+            return self.defaultid.get(self.value, self.__nameless)
+        elif self.type_ == 2:
+            return self.createdid.get(self.value,self. __nameless)
+        elif self.type_ == 3:
+            return self.__nameless
 
     def __repr__(self):
-        if self.name == self.__nameless:
+        # There's a loop for created objects
+        if self.name == self.__nameless or self.type == "C":
             return "RefID<{}:{:08X}>".format(self.type, self.value)
         else:
-            return "RefID<{}>".format(self.name)
+            return "RefID<{}:{:08X}:{}>".format(self.type, self.value, self.name)
 _types["RefID"] = RefID
 
 
