@@ -223,6 +223,48 @@ class ChangeForm(object):
         if length2 != 0:
             data = zlib.decompress(data, 0, length2)
         self.data = data
+        self.d = {}
+
+        if self.type == 0:  # REFR
+            sdata = StringIO(data)
+            if self.formid.value >= 0xFF000000:
+                initialType = 5  # No hits
+            elif self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_PROMOTED'] |
+                                     _ChangeForm_flags['CHANGE_REFR_CELL_CHANGED']):
+                initialType = 6
+            elif self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_HAVOK_MOVE'] |
+                                     _ChangeForm_flags['CHANGE_REFR_MOVE']):
+                initialType = 4  # No hits
+            else:
+                initialType = 0
+            self.d['initialType'] = initialType
+            if not (self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_INVENTORY'] |
+                                        _ChangeForm_flags['CHANGE_REFR_LEVELED_INVENTORY'])):
+                return  # TODO: not really interested right now
+            sdata.read({5: 31, 6: 34, 4: 27, 0:0}[initialType])
+            if self.changeFlags & _ChangeForm_flags['CHANGE_REFR_HAVOK_MOVE']:
+                hmcount = unpack("vsval", sdata)
+                self.d['hmcount'] = hmcount
+                self.d['hmdata'] = sdata.read(hmcount)
+            if self.changeFlags & _ChangeForm_flags['CHANGE_FORM_FLAGS']:
+                self.d['flag'] = unpack("uint32", sdata)
+                self.d['flagdata'] = unpack("uint16", sdata)
+            if self.changeFlags & _ChangeForm_flags['CHANGE_REFR_BASEOBJECT']:
+                self.d['baseobject'] = unpack("RefID", sdata)
+            if self.changeFlags & _ChangeForm_flags['CHANGE_REFR_SCALE']:
+                self.d['scale'] = unpack("float", sdata)
+            if self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_INVENTORY'] |
+                                 _ChangeForm_flags['CHANGE_REFR_LEVELED_INVENTORY']):
+                if self.changeFlags & extra_data_flags:
+                    self.d['extraData'] = unpack("ExtraData", sdata)
+                invcount = unpack("vsval", sdata)
+    #            cf.items = [unpack("InventoryItem", sdata) for i in range(invcount)]
+                self.d['inventory'] = []
+                for i in range(invcount):
+                    self.d['inventory'].append(unpack("InventoryItem", sdata))
+            # Skip Animation
+            # Skip Explosion
+
 #        if self.type == 16:  # INGR
 #            ingr = unpack("INGR", data)
 #            print ingr
