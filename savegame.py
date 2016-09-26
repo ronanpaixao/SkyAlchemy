@@ -37,7 +37,6 @@ class Savegame(object):
             d['magic'] = f.read(13)
             if d['magic'] != 'TESV_SAVEGAME':
                 raise AssertionError("Incorrect magic in file header")
-            f.seek(13)
             d['headerSize'] = unpack("uint32", f)
             # Header
             header = StringIO(f.read(d['headerSize']))
@@ -71,7 +70,6 @@ class Savegame(object):
             d['plugins'] = [unpack("wstring", plugin)
                             for i in range(d['pluginCount'])]
             # File Location Table
-            f.seek( 184494L)
             formIDArrayCountOffset = unpack("uint32", f)
             unknownTable3Offset = unpack("uint32", f)
             globalDataTable1Offset = unpack("uint32", f)
