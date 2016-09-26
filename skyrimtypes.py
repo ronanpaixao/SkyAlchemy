@@ -116,6 +116,19 @@ _types["vsval"] = vsval
 assert vsval(StringIO(struct.pack("BB", 0xe1, 0x13))) == 0x4f8
 
 
+#%% Convert from int to vsval
+def unvsval(value):
+    shiftvalue = value << 2
+    if shiftvalue <= 0x40:
+        return _types["uint8"].pack(shiftvalue)
+    elif shiftvalue <= 0x4000:
+        return _types["uint16"].pack(shiftvalue | 0x1)
+    elif shiftvalue <= 0x40000000:
+        return _types["uint32"].pack(shiftvalue | 0x2)
+    raise ValueError("Cannot convert values > 0x40000000")
+
+unvsval(0x04f8)
+
 #%% filetime
 _EPOCH_AS_FILETIME = 116444736000000000
 _HUNDREDS_OF_NANOSECONDS = 10000000
