@@ -233,6 +233,339 @@ class ChangeForm(object):
 _types["ChangeForm"] = ChangeForm
 
 
+
+#%% Inventory
+_dataTypeNames = {
+    22: "Worn",
+    23: "WornLeft",
+    24: "PackageStartLocation",
+    25: "Package",
+    26: "TresPassPackage",
+    27: "RunOncePacks",
+    28: "ReferenceHandle",
+    29: "unknown29",
+    30: "LevCreaModifier",
+    31: "Ghost",
+    33: "Ownership",
+    34: "Global",
+    35: "Rank",
+    36: "Count",
+    37: "Health",
+    39: "TimeLeft",
+    40: "Charge",
+    42: "Lock",
+    43: "Teleport",
+    44: "MapMarker",
+    45: "LeveledCreature",
+    46: "LeveledItem",
+    47: "Scale",
+    49: "NonActorMagicCaster",
+    50: "NonActorMagicTarget",
+    52: "PlayerCrimeList",
+    56: "ItemDropper",
+    61: "CannotWear",
+    62: "ExtraPoison",
+    68: "FriendHits",
+    69: "HeadingTarget",
+    72: "StartingWorldOrCell",
+    73: "Hotkey",
+    76: "InfoGeneralTopic",
+    77: "HasNoRumors",
+    79: "TerminalState",
+    83: "unknown83",
+    84: "CanTalkToPlayer",
+    85: "ObjectHealth",
+    88: "ModelSwap",
+    89: "Radius",
+    91: "FactionChanges",
+    92: "DismemberedLimbs",
+    93: "ActorCause",
+    101: "CombatStyle",
+    104: "OpenCloseActivateRef",
+    106: "Ammo",
+    108: "PackageData",
+    111: "SayTopicInfoOnceADay",
+    112: "EncounterZone",
+    113: "SayToTopicInfo",
+    120: "GuardedRefData",
+    133: "AshPileRef",
+    135: "FollowerSwimBreadcrumbs",
+    136: "AliasInstanceArray",
+    140: "PromotedRef",
+    142: "OutfitItem",
+    146: "SceneData",
+    149: "FromAlias",
+    150: "ShouldWear",
+    152: "AttachedArrows3D",
+    153: "TextDisplayData",
+    155: "Enchantment",
+    156: "Soul",
+    157: "ForcedTarget",
+    159: "UniqueID",
+    160: "Flags",
+    161: "RefrPath",
+    164: "ForcedLandingMarker",
+    169: "Interaction",
+    174: "GroupConstraint",
+    175: "ScriptedAnimDependence",
+    176: "CachedScale",
+}
+
+
+class MagicTarget(object):
+    def __init__(self, f):
+        self.ref = unpack("RefID", f)
+        unpack("uint8", f)
+        unpack("vsval", f)
+        count = unpack("RefID", f)
+        self.data = [unpack("uint8", f) for i in range(count)]
+    def __repr__(self):
+        return "MagicTarget<{}>".format()
+
+_types["MagicTarget"] = MagicTarget
+
+
+class MagicCaster(object):
+    def __init__(self, f):
+        unpack("uint32", f)
+        self.dataref = unpack("RefID", f)
+        unpack("uint32", f)
+        unpack("uint32", f)
+        self.dataref2 = unpack("RefID", f)
+        unpack("float", f)
+        self.ref = unpack("RefID", f)
+        self.ref2 = unpack("RefID", f)
+    def __repr__(self):
+        return "MagicCaster<{}>".format()
+_types["MagicCaster"] = MagicCaster
+
+
+class ExtraDataType(object):
+    def __init__(self, f):
+        type_ = unpack("uint8", f)
+        self.type = type_
+        self.typeName = _dataTypeNames[type_]
+        if type_ == 22:
+            pass
+        elif type_ == 23:
+            pass
+        elif type_ == 24:
+            self.data = [unpack("RefID", f), unpack("RefID", f),
+                         unpack("uint32", f), f.read(3)]
+        elif type_ == 25:
+            self.data = [unpack("RefID", f), unpack("RefID", f),
+                         unpack("uint32", f), unpack("uint8", f),
+                         unpack("uint8", f), unpack("uint8", f)]
+        elif type_ == 26:
+            self.data = [unpack("RefID", f)]
+            if self.data[0].value != 0:
+                raise NotImplementedError("There's more unknown data")
+        elif type_ == 27:
+            count = unpack("vsval", f)
+            self.data = [(unpack("RefID", f), unpack("uint8", f)) for i in range(count)]
+        elif type_ == 28:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 30:
+            self.data = [unpack("uint32", f)]
+        elif type_ == 31:
+            self.data = [unpack("uint8", f)]
+        elif type_ == 32:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 33:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 34:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 35:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 36:
+            self.data = [unpack("uint16", f)]
+        elif type_ == 37:
+            self.data = [unpack("float", f)]
+        elif type_ == 39:
+            self.data = [unpack("uint32", f)]
+        elif type_ == 40:
+            self.data = [unpack("float", f)]
+        elif type_ == 42:
+            self.data = [unpack("uint8", f), unpack("uint8", f),
+                         unpack("RefID", f), unpack("uint32", f),
+                         unpack("uint32", f)]
+        elif type_ == 43:
+            self.data = [unpack("float", f) for i in range(6)]
+            self.data.extend([unpack("uint8", f), unpack("RefID", f)])
+        elif type_ == 44:
+            self.data = [unpack("uint8", f)]
+        elif type_ == 45:
+            raise NotImplementedError("Too big for now")  # TODO: fix
+        elif type_ == 46:
+            self.data = [unpack("uint32", f), unpack("uint8", f)]
+        elif type_ == 47:
+            self.data = [unpack("float", f)]
+        elif type_ == 49:
+            self.data = [unpack("MagicCaster", f)]
+        elif type_ == 50:
+            self.data = [unpack("RefID", f)]
+            count = unpack("vsval", f)
+            self.data.extend([unpack("MagicTarget", f) for i in range(count)])
+        elif type_ == 52:
+            count = unpack("vsval", f)
+            self.data = [(unpack("uint32", f), unpack("uint32", f)) for i in
+                         range(count)]
+        elif type_ == 56:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 62:
+            self.data = [unpack("RefID", f), unpack("uint32", f)]
+        elif type_ == 68:
+            count = unpack("vsval", f)
+            self.data = [unpack("float", f) for i in range(count)]
+        elif type_ == 69:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 72:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 73:
+            self.data = [unpack("uint8", f)]
+        elif type_ == 76:
+            self.data = [unpack("wstring", f)]
+            self.data.extend([unpack("uint8", f) for i in range(5)])
+            self.data.extend([unpack("RefID", f) for i in range(4)])
+        elif type_ == 77:
+            self.data = [unpack("uint8", f)]
+        elif type_ == 79:
+            self.data = [unpack("uint8", f), unpack("uint8", f)]
+        elif type_ == 83:
+            self.data = [unpack("uint32", f)]
+        elif type_ == 84:
+            self.data = [unpack("uint8", f)]
+        elif type_ == 85:
+            self.data = [unpack("float", f)]
+        elif type_ == 88:
+            self.data = [unpack("RefID", f), unpack("uint32", f)]
+        elif type_ == 89:
+            self.data = [unpack("uint32", f)]
+        elif type_ == 91:
+            count = unpack("vsval", f)
+            self.data = [(unpack("RefID", f), unpack("int8", f)) for i in range(count)]
+            self.data.append(unpack("RefID", f))
+            self.data.append(unpack("int8", f))
+        elif type_ == 92:
+            raise NotImplementedError("Too big for now")  # TODO: fix
+        elif type_ == 93:
+            self.data = [unpack("uint32", f)]
+        elif type_ == 101:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 104:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 106:
+            self.data = [unpack("RefID", f), unpack("uint32", f)]
+        elif type_ == 108:
+            self.data = [unpack("uint8", f)]
+            if self.data != -1:
+                raise NotImplementedError("There's more unknown data")
+        elif type_ == 111:
+            count = unpack("vsval", f)
+            self.data = [(unpack("RefID", f), unpack("uint32", f),
+                          unpack("uint32", f)) for i in range(count)]
+        elif type_ == 112:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 113:
+            raise NotImplementedError("Too big for now")  # TODO: fix
+        elif type_ == 120:
+            count = unpack("vsval", f)
+            self.data = [(unpack("RefID", f), unpack("uint32", f),
+                          unpack("uint8", f)) for i in range(count)]
+        elif type_ == 133:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 135:
+            self.data = [unpack("float", f), unpack("float", f),
+                         unpack("float", f), unpack("RefID", f),
+                         unpack("uint32", f)]
+            count = unpack("vsval", f)
+            self.data.extend([(unpack("float", f), unpack("float", f),
+                               unpack("float", f), unpack("RefID", f),
+                               unpack("float", f), unpack("float", f),
+                               unpack("float", f), unpack("RefID", f),
+                               unpack("uint8", f)) for i in range(count)])
+        elif type_ == 136:
+            count = unpack("vsval", f)
+            self.data = [(unpack("RefID", f), unpack("uint32", f)) for i in range(count)]
+        elif type_ == 140:
+            count = unpack("vsval", f)
+            self.data = [unpack("RefID", f) for i in range(count)]
+        elif type_ == 142:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 146:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 149:
+            self.data = [unpack("RefID", f), unpack("uint32", f)]
+        elif type_ == 150:
+            self.data = [unpack("uint8", f)]
+        elif type_ == 152:
+            raise NotImplementedError("Too big for now")  # TODO: fix
+        elif type_ == 153:
+            self.data = [unpack("RefID", f), unpack("RefID", f),
+                         unpack("int32", f)]
+            if (self.data[2] == -2 and self.data[0].value == 0 and
+                self.data[1].value == 0):
+                    self.data.append(unpack("wstring", f))
+        elif type_ == 155:
+            self.data = [unpack("RefID", f), unpack("uint16", f)]
+        elif type_ == 156:
+            self.data = [unpack("uint8", f)]
+        elif type_ == 157:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 159:
+            self.data = [unpack("uint32", f), unpack("uint16", f)]
+        elif type_ == 160:
+            self.data = [unpack("uint32", f)]
+        elif type_ == 161:
+            self.data = [unpack("float", f) for i in range(3*6)]
+            self.data.extend([unpack("uint32", f) for i in range(4)])
+        elif type_ == 164:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 169:
+            self.data = [unpack("uint32", f), unpack("RefID", f),
+                         unpack("RefID", f), unpack("uint8", f)]
+        elif type_ == 174:
+            raise NotImplementedError("Too big for now")  # TODO: fix
+        elif type_ == 175:
+            self.data = [unpack("RefID", f)]
+        elif type_ == 176:
+            self.data = [unpack("RefID", f)]
+        else:
+            raise RuntimeError("Shouldn't get here! ExtraDataType = %d" % type_)
+#        self.changeFlags = unpack("uint32", f)
+
+    def __repr__(self):
+        return "ExtraDataType<{}:{}>".format(self.type, self.typeName)
+
+_types["ExtraDataType"] = ExtraDataType
+
+
+class ExtraData(object):
+    def __init__(self, f):
+        self.count = unpack("vsval", f)
+        self.data = [unpack("ExtraDataType", f) for i in range(self.count)]
+
+    def __repr__(self):
+        return "ExtraData<>".format()
+
+_types["ExtraData"] = ExtraData
+
+
+class InventoryItem(object):
+    def __init__(self, f):
+        self.item = unpack("RefID", f)
+        self.itemcount = unpack("int32", f)
+        extracount = unpack("vsval", f)
+        self.extraData = [unpack("ExtraData", f) for i in range(extracount)]
+#        print "Position", f.tell()
+
+    def __repr__(self):
+        return "InventoryItem<{}x {}>".format(self.itemcount,
+                                              self.item)
+
+_types["InventoryItem"] = InventoryItem
+
+
 #%% Field
 class Field(object):
     def __init__(self, f):
