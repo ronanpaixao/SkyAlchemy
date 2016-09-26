@@ -118,7 +118,7 @@ class Savegame(object):
             # EOF
             assert(f.read() == "")
             # Inventory
-            for cf in sg.d['changeforms']:
+            for cf in d['changeforms']:
                 if cf.type == 1 and cf.formid.value == 0x14:
                     break
             sdata = StringIO(cf.data)
