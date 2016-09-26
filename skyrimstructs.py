@@ -799,6 +799,94 @@ class ALCH(Record):
 
 _types["ALCH"] = ALCH
 
+
+
+class EnchantedItem(object):
+    def __init__(self, f):
+        self.cost = unpack("uint32", f)
+        flags = unpack("uint32", f)
+        flag_bits = {0x1: "ManualCalc", 0x4: "ExtendDurationOnRecast"}
+        self.flags = [v for k, v in flag_bits.items() if k & flags]
+        self.CastType = {0x00: "Constant Effect", 0x01: "Fire and Forget",
+                         0x02: "Concentration"}[unpack("uint32", f)]
+        self.enchAmount = unpack("uint32", f)
+        self.delivery = {0x00: "Self", 0x01: "Touch", 0x02: "Aimed",
+                         0x03: "Target Actor", 0x04: "Target Location"
+                         }[unpack("uint32", f)]
+        self.EnchantType = {0x06: "Enchantment", 0x0C: "Staff Enchantment"
+                         }[unpack("uint32", f)]
+        self.ChargeTime = unpack("float", f)
+        self.BaseEnchantment = unpack("formid", f)
+
+    def __repr__(self):
+        return "EnchantedItem<>".format()
+
+_types["EnchantedItem"] = EnchantedItem
+
+
+class ENCH(Record):
+    def __init__(self, fd, type_="ENCH"):
+        super(ENCH, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "ENIT":
+                self.ArmorRating = unpack("EnchantedItem", StringIO(field.data))
+            elif field.type == "EFID":
+                self.effects.append(Effect(unpack("formid", field.data)))
+            elif field.type == "EFIT":
+                last_effect = self.effects[-1]
+                last_effect.Magnitude = unpack("float", field.data[:4])
+                last_effect.AreaOfEffect = unpack("uint32", field.data[4:8])
+                last_effect.Duration = unpack("uint32", field.data[8:])
+        db['ENCH'][self.id] = self
+
+    @property
+    def cost(self):
+        return sum([ef.cost for ef in self.effects])
+
+    def __repr__(self):
+        return "ENCH<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["ENCH"] = ENCH
+
+
+class ARMO(Record):
+    def __init__(self, fd, type_="ARMO"):
+        super(ARMO, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "EITM":
+                self.enchantment = unpack("formid", field.data)
+            elif field.type == "EAMT":
+                self.enchantment_amount = unpack("uint16", field.data)
+            elif field.type == "DESC":
+                self.enchantment_amount = unpack("lstring", field.data)
+            elif field.type == "DATA":
+                self.BaseValue = unpack("uint32", field.data[:4])
+                self.Weight = unpack("float", field.data[4:])
+            elif field.type == "DNAM":
+                self.ArmorRating = unpack("uint32", field.data)
+        db['ARMO'][self.id] = self
+
+    @property
+    def cost(self):
+        return self.BaseValue + (self.enchantment.cost + 0.5)
+
+    def __repr__(self):
+        return "ARMO<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["ARMO"] = ARMO
+
 #%% Group
 class Group(object):
     def __init__(self, fd, type_="GRUP"):
@@ -829,4 +917,5 @@ class Group(object):
             return "{}:{}".format(self.type, self.label)
         return self.type
 
-_read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH}
+_read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH,
+                      'ENCH': ENCH, 'ARMO': ARMO}
