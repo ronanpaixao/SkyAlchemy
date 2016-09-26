@@ -52,7 +52,6 @@ class Savegame(object):
             d['playerSex'] = {0: "male", 1: "female"}[unpack("uint16", header)]
             d['playerCurExp'] = unpack("float32", header)
             d['playerLvlUpExp'] = unpack("float32", header)
-            header.seek(63)
             d['filetime'] = unpack("filetime", header)
             d['shotWidth'] = unpack("uint32", header)
             d['shotHeight'] = unpack("uint32", header)
