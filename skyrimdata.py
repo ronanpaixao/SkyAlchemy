@@ -129,32 +129,36 @@ if __name__ == "__main__":
         with open(__lstrings_file, 'w') as f:
             cPickle.dump(lstrings, f)
 
-    #%% Skyrim.esm data files
-    data_filename = osp.join(folder, "Data", "Skyrim.esm")
+    #%% ***.esm data files
+
+    data_filenames = [osp.join(folder, "Data", fn)
+                      for fn in os.listdir(osp.join(folder, "Data"))
+                      if fn.endswith('.esm')]
     from skyrimstructs import Group, Record, db
     if osp.exists(__data_file):
         print("Data is already extracted. Skipping.")
     else:
-        print("Extracting data...")
-        f = open(data_filename, 'rb')
-        f.seek(0)
-        records = []
-        i = 0
-        while True:
-            type_ = f.read(4).decode("cp1252")
-        #    if i == 10:
-        #        break
-            if type_ == "":  # EOF
-                break
-            if type_ == "GRUP":
-                record = Group(f)
-            else:
-                record = Record(f, type_)
-            records.append(record)
-            print(i, record, f.tell())
-            i += 1
+        for data_filename in data_filenames:
+            print("Extracting data from {}".format(osp.basename(data_filename)))
+            f = open(data_filename, 'rb')
+            f.seek(0)
+            records = []
+            i = 0
+            while True:
+                type_ = f.read(4).decode("cp1252")
+            #    if i == 10:
+            #        break
+                if type_ == "":  # EOF
+                    break
+                if type_ == "GRUP":
+                    record = Group(f)
+                else:
+                    record = Record(f, type_)
+                records.append(record)
+                print(i, record, f.tell())
+                i += 1
 
-        f.close()
+            f.close()
 
         #%% Save data
         with open('data.pkl', 'wb') as f:
