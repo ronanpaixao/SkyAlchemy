@@ -119,13 +119,16 @@ if __name__ == "__main__":
 
     #%% Lstrings (localized strings)
     # Only supports English localization
-    strings_filename = osp.join(folder, "Data", "Strings", "Skyrim_English.STRINGS")
     if osp.exists(__lstrings_file):
         print("lstrings file already exists. Skipping extraction. Delete {} "
               "to extract again.")
     else:
-        print("Extracting lstrings...")
-        lstrings = extract_strings(strings_filename)
+        strings_files = os.listdir(osp.join(folder, 'Data', 'Strings'))
+        for strings_filename in strings_files:
+            print("Extracting lstrings from {}".format(osp.basename(
+                  strings_filename)))
+            lstrings.update(extract_strings(osp.join(folder, "Data", "Strings",
+                                                     strings_filename)))
         with open(__lstrings_file, 'w') as f:
             cPickle.dump(lstrings, f)
 
