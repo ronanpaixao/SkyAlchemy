@@ -679,7 +679,6 @@ class Record(object):
 class Effect(object):
     def __init__(self, id_):
         self.EffectID = id_
-        self.MGEF = db['MGEF'][id_]
         self.Magnitude = 0
         self.AreaOfEffect = 0
         self.Duration = 0
