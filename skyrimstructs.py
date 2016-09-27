@@ -1004,6 +1004,75 @@ class WEAP(Record):
 _types["WEAP"] = WEAP
 
 
+class AMMO(Record):
+    def __init__(self, fd, type_="AMMO"):
+        super(AMMO, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DESC":
+                self.Description = unpack("lstring", field.data)
+            elif field.type == "CNAM":
+                self.cnam = unpack("formid", field.data)
+            elif field.type == "DATA":
+                sdata = StringIO(field.data)
+                self.projID = unpack("formid", sdata)
+                flags = unpack("uint32", sdata)
+                flag_bits = {0x1: "Ignores Normal Weapon Resistance",
+                             0x2: "Non-Playable",
+                             0x4: "Non-Bolt"}
+                self.flags = [v for k, v in flag_bits.items() if k & flags]
+                self.damage = unpack("float", sdata)
+                self.cost = unpack("uint32", sdata)
+            elif field.type == "EAMT":
+                self.enchantment_charge = unpack("uint16", field.data)
+            elif field.type == "EITM":
+                self.enchantment = unpack("formid", field.data)
+            # TODO: include DNAM field?
+
+        db['AMMO'][self.id] = self
+
+    def __repr__(self):
+        return "AMMO<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["AMMO"] = AMMO
+
+
+class SLGM(Record):
+    def __init__(self, fd, type_="SLGM"):
+        super(SLGM, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "SOUL":
+                self.soul = {0: "Empty", 1: "Petty", 2: "Lesser", 3: "Common",
+                             4: "Greater", 5: "Grand"
+                             }[unpack("uint8", field.data)]
+            elif field.type == "DATA":
+                self.cost = unpack("uint32", field.data[:4])
+                self.weight = unpack("float", field.data[4:])
+            elif field.type == "SLCP":
+                self.capacity = {0: "Empty", 1: "Petty", 2: "Lesser",
+                                 3: "Common", 4: "Greater", 5: "Grand"
+                                }[unpack("uint8", field.data)]
+
+        db['SLGM'][self.id] = self
+
+    def __repr__(self):
+        return "SLGM<{:08X}:{}:{}>".format(self.id, self.FullName,
+                                           self.capacity)
+
+_types["SLGM"] = SLGM
+
+
 #%% Group
 class Group(object):
     def __init__(self, fd, type_="GRUP"):
@@ -1036,4 +1105,4 @@ class Group(object):
 
 _read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH,
                       'ENCH': ENCH, 'ARMO': ARMO, 'MISC': MISC, 'SCRL': SCRL,
-                      'BOOK': BOOK, 'WEAP': WEAP}
+                      'BOOK': BOOK, 'WEAP': WEAP, 'AMMO': AMMO, 'SLGM': SLGM}
