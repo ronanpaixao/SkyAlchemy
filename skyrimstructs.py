@@ -1073,6 +1073,28 @@ class SLGM(Record):
 _types["SLGM"] = SLGM
 
 
+class KEYM(Record):
+    def __init__(self, fd, type_="KEYM"):
+        super(KEYM, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DATA":
+                self.cost = unpack("uint32", field.data[:4])
+                self.weight = unpack("float", field.data[4:])
+
+        db['KEYM'][self.id] = self
+
+    def __repr__(self):
+        return "KEYM<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["KEYM"] = KEYM
+
+
 #%% Group
 class Group(object):
     def __init__(self, fd, type_="GRUP"):
@@ -1105,4 +1127,5 @@ class Group(object):
 
 _read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH,
                       'ENCH': ENCH, 'ARMO': ARMO, 'MISC': MISC, 'SCRL': SCRL,
-                      'BOOK': BOOK, 'WEAP': WEAP, 'AMMO': AMMO, 'SLGM': SLGM}
+                      'BOOK': BOOK, 'WEAP': WEAP, 'AMMO': AMMO, 'SLGM': SLGM,
+                      'KEYM': KEYM}
