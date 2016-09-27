@@ -971,6 +971,39 @@ class BOOK(Record):
 _types["BOOK"] = BOOK
 
 
+class WEAP(Record):
+    def __init__(self, fd, type_="WEAP"):
+        super(WEAP, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DESC":
+                self.Description = unpack("lstring", field.data)
+            elif field.type == "CNAM":
+                self.cnam = unpack("formid", field.data)
+            elif field.type == "DATA":
+                sdata = StringIO(field.data)
+                self.cost = unpack("uint32", sdata)
+                self.Weight = unpack("float", sdata)
+                self.damage = unpack("uint16", sdata)
+            elif field.type == "EAMT":
+                self.enchantment_charge = unpack("uint16", field.data)
+            elif field.type == "EITM":
+                self.enchantment = unpack("formid", field.data)
+            # TODO: include DNAM field?
+
+        db['WEAP'][self.id] = self
+
+    def __repr__(self):
+        return "WEAP<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["WEAP"] = WEAP
+
+
 #%% Group
 class Group(object):
     def __init__(self, fd, type_="GRUP"):
@@ -1003,4 +1036,4 @@ class Group(object):
 
 _read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH,
                       'ENCH': ENCH, 'ARMO': ARMO, 'MISC': MISC, 'SCRL': SCRL,
-                      'BOOK': BOOK}
+                      'BOOK': BOOK, 'WEAP': WEAP}
