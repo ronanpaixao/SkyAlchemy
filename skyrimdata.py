@@ -122,6 +122,10 @@ if __name__ == "__main__":
     if osp.exists(__lstrings_file):
         print("lstrings file already exists. Skipping extraction. Delete {} "
               "to extract again.")
+        if len(lstrings) == 0:
+            with open(__lstrings_file, 'rb') as f:
+                lstrings.update(cPickle.load(f))
+
     else:
         strings_files = os.listdir(osp.join(folder, 'Data', 'Strings'))
         for strings_filename in strings_files:
