@@ -936,6 +936,41 @@ class SCRL(Record):
 
 _types["SCRL"] = SCRL
 
+
+class BOOK(Record):
+    def __init__(self, fd, type_="BOOK"):
+        super(BOOK, self).__init__(fd, type_)
+        self.effects = []
+        self.FullName = "Unnamed"
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+            elif field.type == "FULL":
+                self.FullName = unpack("lstring", field.data)
+            elif field.type == "DESC":
+                self.Description = unpack("lstring", field.data)
+            elif field.type == "CNAM":
+                self.Description2 = unpack("lstring", field.data)
+            elif field.type == "DATA":
+                sdata = StringIO(field.data)
+                flags = unpack("uint8", sdata)
+                flag_bits = {0x1: "Teaches Skill", 0x2: "Can't be Taken",
+                             0x4: "Teaches Spell", 0x8: "Read"}
+                self.flags = [v for k, v in flag_bits.items() if k & flags]
+                self.type = {0: "Book/Tome", 255: "Note/Scroll"
+                             }[unpack("uint8", sdata)]
+                unpack("uint8", sdata)  # Always 0
+                self.teaches = unpack("uint32", sdata)
+                self.cost = unpack("uint32", sdata)
+                self.Weight = unpack("float", sdata)
+        db['BOOK'][self.id] = self
+
+    def __repr__(self):
+        return "BOOK<{:08X}:{}>".format(self.id, self.FullName)
+
+_types["BOOK"] = BOOK
+
+
 #%% Group
 class Group(object):
     def __init__(self, fd, type_="GRUP"):
@@ -967,4 +1002,5 @@ class Group(object):
         return self.type
 
 _read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH,
-                      'ENCH': ENCH, 'ARMO': ARMO, 'MISC': MISC, 'SCRL': SCRL}
+                      'ENCH': ENCH, 'ARMO': ARMO, 'MISC': MISC, 'SCRL': SCRL,
+                      'BOOK': BOOK}
