@@ -96,7 +96,7 @@ else:
 
 def lstring(f):
     id_ = unpack("uint32", f)
-    return lstrings.get(id_, "Unknown string")
+    return lstrings.get(id_, "Unknown string: 0x{:08d}".format(id_))
 
 _types["lstring"] = lstring
 
