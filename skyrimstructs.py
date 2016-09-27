@@ -755,9 +755,9 @@ class MGEF(Record):
                 self.EffectType = unpack("uint32", fdata)
                 self.PrimaryAV = unpack("int32", fdata)
             elif field.type == "ESCE":
-                self.CounterEffects = unpack("formid", fdata)
+                self.CounterEffects = unpack("formid", field.data)
             elif field.type == "DNAM":
-                self.Description = unpack("lstring", fdata)
+                self.Description = unpack("lstring", field.data)
         db['MGEF'][self.id] = self
 
     def __repr__(self):
