@@ -739,7 +739,11 @@ class MGEF(Record):
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)
             elif field.type == "FULL":
-                self.FullName = unpack("lstring", field.data)
+                if self.id < 0x01000000:
+                    self.FullName = unpack("lstring", field.data)
+                else:
+                    # TODO: find where DLC strings are
+                    self.FullName = "DLC string: {}".format(unpack('formid', field.data))
             elif field.type == "DATA":
                 fdata = StringIO(field.data)
                 self.Flags = unpack("uint32", fdata)
