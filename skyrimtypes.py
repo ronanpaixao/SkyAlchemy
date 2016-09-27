@@ -169,8 +169,7 @@ class RefID(object):
             return self.__nameless
 
     def __repr__(self):
-        # There's a loop for created objects
-        if self.name == self.__nameless or self.type == "C":
+        if self.name == self.__nameless:
             return "RefID<{}:{:08X}>".format(self.type, self.value)
         else:
             return "RefID<{}:{:08X}:{}>".format(self.type, self.value, self.name)

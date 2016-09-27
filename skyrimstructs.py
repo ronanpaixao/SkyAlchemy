@@ -102,7 +102,7 @@ class Enchantment(object):
         self.effects = [unpack("MagicEffect", f) for i in range(count)]
 
     def __repr__(self):
-        return "Enchantment<{} x{}: {}>".format(self.refID,
+        return "Enchantment<{:08x} x{}: {}>".format(self.refID.value,
                                               self.timesUsed,
                                               self.effects)
 _types["Enchantment"] = Enchantment
