@@ -418,6 +418,8 @@ class ExtraDataType(object):
             self.data = [(unpack("RefID", f), unpack("uint8", f)) for i in range(count)]
         elif type_ == 28:
             self.data = [unpack("RefID", f)]
+        elif type_ == 29:
+            pass
         elif type_ == 30:
             self.data = [unpack("uint32", f)]
         elif type_ == 31:
