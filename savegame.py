@@ -16,7 +16,7 @@ from collections import OrderedDict
 from cStringIO import StringIO
 
 #%% unpack and data
-from skyrimtypes import unpack
+from skyrimtypes import unpack, RefID
 import skyrimdata
 skyrimdata.loadData()
 
@@ -127,5 +127,13 @@ class Savegame(object):
 
             self.d = d
 
+    def populate_createdid(self):
+        for k, created in self.d['gdata']['Created Objects'].items():
+            for item in created:
+#                print "Created", k, hex(item.refID.value)
+                RefID.createdid[item.refID.value] = item
+
+
+#%%
 sg = Savegame(filename)
 
