@@ -14,6 +14,9 @@ from __future__ import unicode_literals
 import struct
 from collections import OrderedDict
 from cStringIO import StringIO
+import os
+import os.path as osp
+import ctypes
 
 #%% unpack and data
 from skyrimtypes import unpack, RefID
