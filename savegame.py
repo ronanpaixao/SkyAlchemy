@@ -135,5 +135,27 @@ class Savegame(object):
 
 
 #%%
-sg = Savegame(filename)
+def getSaveGames():
+    """Get list of savegame files"""
+    dll = ctypes.windll.shell32
+    buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH + 1)
+    try:
+        if dll.SHGetSpecialFolderPathW(None, buf, 0x0005, False):
+            savedir = osp.join(buf.value, "My Games", "Skyrim", "Saves")
+            if not osp.exists(savedir) or not osp.isdir(savedir):
+                raise RuntimeError("Could not find savegame directory.")
+        else:
+            raise RuntimeError("Could not find savegame directory.")
+    except:
+        raise RuntimeError("Could not find savegame directory.")
+    savegames = [osp.join(savedir, f) for f in os.listdir(savedir) if f.endswith(".ess")]
+    return savegames
 
+
+#%%
+def test_savegame():
+    #%%
+    savegames = getSaveGames()
+    for filename in savegames:
+        sg = Savegame(filename)
+        sg.populate_createdid()
