@@ -102,6 +102,8 @@ _types["lstring"] = lstring
 
 #%% vsval
 def vsval(f):
+    if not getattr(f, "read", False):  # Probably string
+        f = StringIO(f)
     b1 = unpack("uint8", f)
     length = b1 & 0x3
     if length == 0:
