@@ -402,8 +402,9 @@ class ExtraDataType(object):
         elif type_ == 23:
             pass
         elif type_ == 24:
-            self.data = [unpack("RefID", f), unpack("RefID", f),
-                         unpack("uint32", f), f.read(3)]
+            self.data = [unpack("RefID", f), unpack("float", f),
+                         unpack("float", f), unpack("float", f),
+                         unpack("float", f)]
         elif type_ == 25:
             self.data = [unpack("RefID", f), unpack("RefID", f),
                          unpack("uint32", f), unpack("uint8", f),
