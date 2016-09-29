@@ -265,19 +265,44 @@ class ChangeForm(object):
             # Skip Animation
             # Skip Explosion
 
+        elif self.type == 1 and self.formid.value == 0x14:  # Player ACHR
+            sdata = StringIO(self.data)
+            if self.formid.value >= 0xFF000000:
+                initialType = 5  # No hits
+            elif self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_PROMOTED'] |
+                                     _ChangeForm_flags['CHANGE_REFR_CELL_CHANGED']):
+                initialType = 6
+            elif self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_HAVOK_MOVE'] |
+                                     _ChangeForm_flags['CHANGE_REFR_MOVE']):
+                initialType = 4  # No hits
+            else:
+                initialType = 0
+            self.d['initialType'] = initialType
+            if not (self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_INVENTORY'] |
+                                        _ChangeForm_flags['CHANGE_REFR_LEVELED_INVENTORY'])):
+                return  # TODO: not really interested right now
+            sdata.read({5: 31, 6: 34, 4: 27, 0:0}[initialType])
+            if self.changeFlags & _ChangeForm_flags['CHANGE_REFR_HAVOK_MOVE']:
+                hmcount = unpack("vsval", sdata)
+                self.d['hmcount'] = hmcount
+                self.d['hmdata'] = sdata.read(hmcount)
+            if self.changeFlags & _ChangeForm_flags['CHANGE_FORM_FLAGS']:
+                self.d['flag'] = unpack("uint32", sdata)
+                self.d['flagdata'] = unpack("uint16", sdata)
+            if self.changeFlags & _ChangeForm_flags['CHANGE_REFR_BASEOBJECT']:
+                self.d['baseobject'] = unpack("RefID", sdata)
+            if self.changeFlags & _ChangeForm_flags['CHANGE_REFR_SCALE']:
+                self.d['scale'] = unpack("float", sdata)
+            if self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_INVENTORY'] |
+                                 _ChangeForm_flags['CHANGE_REFR_LEVELED_INVENTORY']):
+                sdata.read(8)  # Unknown
+                if self.changeFlags & extra_data_flags:
+                    self.d['extraData'] = unpack("ExtraData", sdata)
+                invcount = unpack("vsval", sdata)
+                self.d['inventory'] = [unpack("InventoryItem", sdata) for i in range(invcount)]
+
         elif self.type == 16:  # INGR
             self.d['ingr_data'] = unpack("uint32", data)
-
-        elif self.type == 1 and self.formid.value == 0x14:  # Player ACHR
-            sdata = StringIO(data)
-            sdata.seek(829)
-            itemcount = unpack("vsval", sdata)
-#            inventory = []
-            #for i in range(itemcount):
-            #    print(i, hex(sdata.tell()))
-            #    inventory.append(unpack("InventoryItem", sdata))
-
-            self.d['inventory'] = [unpack("InventoryItem", sdata) for i in range(itemcount)]
 
     def __repr__(self):
         return "ChangeForm<{}>".format(self.formid)
