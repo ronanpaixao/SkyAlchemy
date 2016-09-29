@@ -392,6 +392,30 @@ class MagicCaster(object):
 _types["MagicCaster"] = MagicCaster
 
 
+class AttachedArrows3DData(object):
+    def __init__(self, f):
+        self.ref = unpack("RefID", f)
+        if self.ref.value != 0:
+            self.unknU16 = unpack("uint16", f)
+            if self.unknU16 != 0xFFFF:
+                self.unk2 = unpack("uint32", f)
+                self.unks = [unpack("float", f) for i in range(8)]
+    def __repr__(self):
+        return "AttachedArrows3DData<>".format()
+_types["AttachedArrows3DData"] = AttachedArrows3DData
+
+
+class AttachedArrows3D(object):
+    def __init__(self, f):
+        count = unpack("vsval", f)
+        self.var = [unpack("AttachedArrows3DData", f) for i in range(count)]
+        unpack("uint16", f)
+        unpack("uint16", f)
+    def __repr__(self):
+        return "AttachedArrows3D<>".format()
+_types["AttachedArrows3D"] = AttachedArrows3D
+
+
 class ExtraDataType(object):
     def __init__(self, f):
         type_ = unpack("uint8", f)
@@ -554,7 +578,7 @@ class ExtraDataType(object):
         elif type_ == 150:
             self.data = [unpack("uint8", f)]
         elif type_ == 152:
-            raise NotImplementedError("Too big for now")  # TODO: fix
+            self.data = [unpack("AttachedArrows3D", f)]
         elif type_ == 153:
             self.data = [unpack("RefID", f), unpack("RefID", f),
                          unpack("int32", f)]
