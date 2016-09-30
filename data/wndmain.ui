@@ -44,7 +44,11 @@
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
-          <widget class="QTextEdit" name="textGeneral"/>
+          <widget class="QTextEdit" name="textGeneral">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>

@@ -20,6 +20,8 @@ import ctypes
 import logging
 reload(logging)  # Needed inside Spyder IDE
 import argparse
+import base64
+from io import BytesIO
 
 #%% Setup PyQt's v2 APIs. Must be done before importing PyQt or PySide
 import rthook
@@ -28,6 +30,7 @@ import rthook
 from qtpy import QtCore, QtGui, QtWidgets, uic
 
 import six
+from jinja2 import Environment, FileSystemLoader
 
 
 #%% Application imports
@@ -126,6 +129,8 @@ class WndMain(QtWidgets.QMainWindow):
         logger.addHandler(consoleHandler)
         consoleHandler.log.connect(self.on_consoleHandler_log)
         self.logger = logger
+        # Setup Jinja templating
+        self.env = Environment(loader=FileSystemLoader(frozen('data')))
         # Threading example with new-style connections
 #        self.thread = CallbackThread(self)
 #        def callback_fcn(self, t=2):  # Use defaults to pass arguments
@@ -181,8 +186,19 @@ class WndMain(QtWidgets.QMainWindow):
 
     ### Core functionality
     def open_savegame(self, filename):
-        print("open_savegame", filename)
+        sg = savegame.Savegame(filename)
+        html = self.dict2html(sg.d)
+        self.textGeneral.setHtml(html.encode("ascii", "xmlcharrefreplace"))
+        self.sg = sg
 
+    def dict2html(self, dic):
+        template_filename = 'general_'+QtCore.QLocale().name()+'.html'
+        buf = BytesIO()
+        dic['screenshotImage'].save(buf, format="BMP")
+        template = self.env.get_template(template_filename)
+        html = template.render(d=dic, screenshotData=
+                               base64.b64encode(buf.getvalue()))
+        return html
 
 
 #%% Main execution
