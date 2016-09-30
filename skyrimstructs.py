@@ -1086,6 +1086,7 @@ class AMMO(Record):
         super(AMMO, self).__init__(fd, type_)
         self.effects = []
         self.FullName = "Unnamed"
+        self.Weight = 0
         for field in self.fields:
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)
