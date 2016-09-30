@@ -22,6 +22,7 @@ reload(logging)  # Needed inside Spyder IDE
 import argparse
 import base64
 from io import BytesIO
+from collections import OrderedDict
 
 #%% Setup PyQt's v2 APIs. Must be done before importing PyQt or PySide
 import rthook
@@ -131,6 +132,19 @@ class WndMain(QtWidgets.QMainWindow):
         self.logger = logger
         # Setup Jinja templating
         self.env = Environment(loader=FileSystemLoader(frozen('data')))
+        self.inv_types = OrderedDict([
+            ('ARMO', self.tr("Armor")),
+            ('WEAP', self.tr("Weapons")),
+            ('ALCH', self.tr("Potions")),
+            ('INGR', self.tr("Ingredients")),
+            ('SCRL', self.tr("Scrolls")),
+            ('MISC', self.tr("Miscellaneous")),
+            ('BOOK', self.tr("Books")),
+            ('AMMO', self.tr("Ammunition")),
+            ('SLGM', self.tr("Soul gems")),
+            ('KEYM', self.tr("Keys")),
+            ('Other', self.tr("Other")),
+        ])
         # Threading example with new-style connections
 #        self.thread = CallbackThread(self)
 #        def callback_fcn(self, t=2):  # Use defaults to pass arguments
@@ -197,8 +211,25 @@ class WndMain(QtWidgets.QMainWindow):
         buf = BytesIO()
         dic['screenshotImage'].save(buf, format="BMP")
         template = self.env.get_template(template_filename)
+        inventory = {v: [] for v in self.inv_types.values()}
+        inventory_weight = {v: 0 for v in self.inv_types.values()}
+        for inv_item in dic['inventory']:
+            # TODO: fix torch (MISC ID 0x0001D4EC)
+            if inv_item.item.type not in {'C', 'F'} and inv_item.itemcount>0:
+                item_ref = inv_item.item.name
+                type_ = self.inv_types.get(inv_item.item.name.type,
+                                           self.inv_types['Other'])
+                inventory[type_].append((item_ref.FullName,
+                                         item_ref.Value,
+                                         item_ref.Weight,
+                                         inv_item.itemcount))
+                inventory_weight[type_] += item_ref.Weight * inv_item.itemcount
+        total_weight = sum(inventory_weight.values())
         html = template.render(d=dic, screenshotData=
-                               base64.b64encode(buf.getvalue()))
+                               base64.b64encode(buf.getvalue()),
+                               inventory=inventory,
+                               inventory_weight=inventory_weight,
+                               total_weight=total_weight)
         return html
 
 
