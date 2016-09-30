@@ -1021,8 +1021,9 @@ class BOOK(Record):
                 flag_bits = {0x1: "Teaches Skill", 0x2: "Can't be Taken",
                              0x4: "Teaches Spell", 0x8: "Read"}
                 self.flags = [v for k, v in flag_bits.items() if k & flags]
-                self.type = {0: "Book/Tome", 255: "Note/Scroll"
-                             }[unpack("uint8", sdata)]
+                self.booktype = {0: "Book/Tome", 255: "Note/Scroll"
+                                 }[unpack("uint8", sdata)]
+                unpack("uint8", sdata)  # Always 0
                 unpack("uint8", sdata)  # Always 0
                 self.teaches = unpack("uint32", sdata)
                 self.Value = unpack("uint32", sdata)
