@@ -224,6 +224,8 @@ class WndMain(QtWidgets.QMainWindow):
                                          item_ref.Weight,
                                          inv_item.itemcount))
                 inventory_weight[type_] += item_ref.Weight * inv_item.itemcount
+        for item_list in inventory.values():
+            item_list.sort()
         total_weight = sum(inventory_weight.values())
         html = template.render(d=dic, screenshotData=
                                base64.b64encode(buf.getvalue()),
