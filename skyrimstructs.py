@@ -735,7 +735,8 @@ class Effect(object):
         self.AreaOfEffect = 0
         self.Duration = 0
 
-    def cost(self):
+    @property
+    def Value(self):
         try:
             return (db['MGEF'][self.EffectID].BaseCost *
                     (self.Magnitude * self.Duration / 10) ** 1.1)
@@ -858,7 +859,7 @@ _types["ALCH"] = ALCH
 
 class EnchantedItem(object):
     def __init__(self, f):
-        self.cost = unpack("uint32", f)
+        self.Value = unpack("uint32", f)
         flags = unpack("uint32", f)
         flag_bits = {0x1: "ManualCalc", 0x4: "ExtendDurationOnRecast"}
         self.flags = [v for k, v in flag_bits.items() if k & flags]
@@ -901,8 +902,8 @@ class ENCH(Record):
         db['ENCH'][self.id] = self
 
     @property
-    def cost(self):
-        return sum([ef.cost for ef in self.effects])
+    def Value(self):
+        return sum([ef.Value for ef in self.effects])
 
     def __repr__(self):
         return "ENCH<{:08X}:{}>".format(self.id, self.FullName)
@@ -933,8 +934,11 @@ class ARMO(Record):
         db['ARMO'][self.id] = self
 
     @property
-    def cost(self):
-        return self.BaseValue + (self.enchantment.cost + 0.5)
+    def Value(self):
+        if self.enchantment:
+            return self.BaseValue + (self.enchantment.name.Value + 0.5)
+        else:
+            return self.BaseValue
 
     def __repr__(self):
         return "ARMO<{:08X}:{}>".format(self.id, self.FullName)
@@ -952,7 +956,7 @@ class MISC(Record):
             elif field.type == "FULL":
                 self.FullName = unpack("lstring", field.data)
             elif field.type == "DATA":
-                self.cost = unpack("uint32", field.data[:4])
+                self.Value = unpack("uint32", field.data[:4])
                 self.Weight = unpack("float", field.data[4:])
         db['MISC'][self.id] = self
 
@@ -975,7 +979,7 @@ class SCRL(Record):
             elif field.type == "DESC":
                 self.Description = unpack("lstring", field.data)
             elif field.type == "DATA":
-                self.cost = unpack("uint32", field.data[:4])
+                self.Value = unpack("uint32", field.data[:4])
                 self.Weight = unpack("float", field.data[4:])
             elif field.type == "EFID":
                 self.effects.append(Effect(unpack("formid", field.data)))
@@ -1016,7 +1020,7 @@ class BOOK(Record):
                              }[unpack("uint8", sdata)]
                 unpack("uint8", sdata)  # Always 0
                 self.teaches = unpack("uint32", sdata)
-                self.cost = unpack("uint32", sdata)
+                self.Value = unpack("uint32", sdata)
                 self.Weight = unpack("float", sdata)
         db['BOOK'][self.id] = self
 
@@ -1042,7 +1046,7 @@ class WEAP(Record):
                 self.cnam = unpack("formid", field.data)
             elif field.type == "DATA":
                 sdata = StringIO(field.data)
-                self.cost = unpack("uint32", sdata)
+                self.Value = unpack("uint32", sdata)
                 self.Weight = unpack("float", sdata)
                 self.damage = unpack("uint16", sdata)
             elif field.type == "EAMT":
@@ -1082,7 +1086,7 @@ class AMMO(Record):
                              0x4: "Non-Bolt"}
                 self.flags = [v for k, v in flag_bits.items() if k & flags]
                 self.damage = unpack("float", sdata)
-                self.cost = unpack("uint32", sdata)
+                self.Value = unpack("uint32", sdata)
             elif field.type == "EAMT":
                 self.enchantment_charge = unpack("uint16", field.data)
             elif field.type == "EITM":
@@ -1112,7 +1116,7 @@ class SLGM(Record):
                              4: "Greater", 5: "Grand"
                              }[unpack("uint8", field.data)]
             elif field.type == "DATA":
-                self.cost = unpack("uint32", field.data[:4])
+                self.Value = unpack("uint32", field.data[:4])
                 self.weight = unpack("float", field.data[4:])
             elif field.type == "SLCP":
                 self.capacity = {0: "Empty", 1: "Petty", 2: "Lesser",
@@ -1139,7 +1143,7 @@ class KEYM(Record):
             elif field.type == "FULL":
                 self.FullName = unpack("lstring", field.data)
             elif field.type == "DATA":
-                self.cost = unpack("uint32", field.data[:4])
+                self.Value = unpack("uint32", field.data[:4])
                 self.weight = unpack("float", field.data[4:])
 
         db['KEYM'][self.id] = self
