@@ -128,11 +128,16 @@ class Savegame(object):
 
             self.d = d
 
-    def populate_createdid(self):
+    def populate_ids(self):
         for k, created in self.d['gdata']['Created Objects'].items():
             for item in created:
 #                print "Created", k, hex(item.refID.value)
                 RefID.createdid[item.refID.value] = item
+        for i, formid in enumerate(self.d['formid']):
+            if formid in RefID.defaultid:
+                RefID.formid[i+1] = RefID.defaultid[formid]
+            elif formid in RefID.createdid:
+                RefID.formid[i+1] = RefID.createdid[formid]
 
 
 #%%
