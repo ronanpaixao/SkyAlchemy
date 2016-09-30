@@ -1127,7 +1127,7 @@ class SLGM(Record):
                              }[unpack("uint8", field.data)]
             elif field.type == "DATA":
                 self.Value = unpack("uint32", field.data[:4])
-                self.weight = unpack("float", field.data[4:])
+                self.Weight = unpack("float", field.data[4:])
             elif field.type == "SLCP":
                 self.capacity = {0: "Empty", 1: "Petty", 2: "Lesser",
                                  3: "Common", 4: "Greater", 5: "Grand"
@@ -1154,7 +1154,7 @@ class KEYM(Record):
                 self.FullName = unpack("lstring", field.data)
             elif field.type == "DATA":
                 self.Value = unpack("uint32", field.data[:4])
-                self.weight = unpack("float", field.data[4:])
+                self.Weight = unpack("float", field.data[4:])
 
         db['KEYM'][self.id] = self
 
