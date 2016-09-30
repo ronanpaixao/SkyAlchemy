@@ -17,6 +17,7 @@ from cStringIO import StringIO
 import os
 import os.path as osp
 import ctypes
+import ctypes.wintypes
 
 #%% unpack and data
 from skyrimtypes import unpack, RefID
