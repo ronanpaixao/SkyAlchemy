@@ -915,14 +915,14 @@ class ARMO(Record):
     def __init__(self, fd, type_="ARMO"):
         super(ARMO, self).__init__(fd, type_)
         self.FullName = "Unnamed"
-        self.enchantment = 0
+        self.enchantment_id = 0
         for field in self.fields:
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)
             elif field.type == "FULL":
                 self.FullName = unpack("lstring", field.data)
             elif field.type == "EITM":
-                self.enchantment = unpack("formid", field.data)
+                self.enchantment_id = unpack("formid", field.data)
             elif field.type == "EAMT":
                 self.enchantment_amount = unpack("uint16", field.data)
             elif field.type == "DESC":
@@ -935,8 +935,12 @@ class ARMO(Record):
         db['ARMO'][self.id] = self
 
     @property
+    def enchantment(self):
+        return RefID(self.enchantment_id)
+
+    @property
     def Value(self):
-        if self.enchantment:
+        if self.enchantment_id:
             return self.BaseValue + (self.enchantment.name.Value + 0.5)
         else:
             return self.BaseValue
@@ -1036,7 +1040,7 @@ class WEAP(Record):
         super(WEAP, self).__init__(fd, type_)
         self.effects = []
         self.FullName = "Unnamed"
-        self.enchantment = 0
+        self.enchantment_id = 0
         for field in self.fields:
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)
@@ -1054,14 +1058,18 @@ class WEAP(Record):
             elif field.type == "EAMT":
                 self.enchantment_charge = unpack("uint16", field.data)
             elif field.type == "EITM":
-                self.enchantment = unpack("formid", field.data)
+                self.enchantment_id = unpack("formid", field.data)
             # TODO: include DNAM field?
 
         db['WEAP'][self.id] = self
 
     @property
+    def enchantment(self):
+        return RefID(self.enchantment_id)
+
+    @property
     def Value(self):
-        if self.enchantment:
+        if self.enchantment_id:
             return self.BaseValue + (self.enchantment_charge * 0.12 +
                                      self.enchantment.name.Value * 8)
         else:
