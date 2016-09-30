@@ -1036,6 +1036,7 @@ class WEAP(Record):
         super(WEAP, self).__init__(fd, type_)
         self.effects = []
         self.FullName = "Unnamed"
+        self.enchantment = 0
         for field in self.fields:
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)
@@ -1047,7 +1048,7 @@ class WEAP(Record):
                 self.cnam = unpack("formid", field.data)
             elif field.type == "DATA":
                 sdata = StringIO(field.data)
-                self.Value = unpack("uint32", sdata)
+                self.BaseValue = unpack("uint32", sdata)
                 self.Weight = unpack("float", sdata)
                 self.damage = unpack("uint16", sdata)
             elif field.type == "EAMT":
@@ -1057,6 +1058,14 @@ class WEAP(Record):
             # TODO: include DNAM field?
 
         db['WEAP'][self.id] = self
+
+    @property
+    def Value(self):
+        if self.enchantment:
+            return self.BaseValue + (self.enchantment_charge * 0.12 +
+                                     self.enchantment.name.Value * 8)
+        else:
+            return self.BaseValue
 
     def __repr__(self):
         return "WEAP<{:08X}:{}>".format(self.id, self.FullName)
