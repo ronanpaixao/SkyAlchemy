@@ -1,0 +1,52 @@
+<html>
+<head>
+<title>General savegame data</title>
+<style>
+table {
+    border-collapse: collapse;
+    white-space: nowrap;
+}
+
+table, th, td {
+    border-style: solid;
+    border-color: black;
+}
+</style>
+</head>
+<body>
+<h3>Header data</h3>
+<table border="1" cellpadding="4" cellspacing="0">
+<thead><tr><th>Property</th><th>Value</th></tr></thead>
+
+<tr><td colspan=2 bgcolor=lightGray>Header data</td></tr>
+<tr><td>Savegame number</td><td>{{d["saveNumber"]}}</td></tr>
+<tr><td>Player name</td><td>{{d["playerName"]}}</td></tr>
+<tr><td>Level</td><td>{{d["playerLevel"]}}</td></tr>
+<tr><td>Location</td><td>{{d["playerLocation"]}}</td></tr>
+<tr><td>Game date</td><td>{{d["gameDate"]}}</td></tr>
+<tr><td>Race</td><td>{{d["playerRaceEditorId"]}}</td></tr>
+<tr><td>Sex</td><td>{{d["playerSex"]}}</td></tr>
+<tr><td>Current XP</td><td>{{d["playerCurExp"]}}</td></tr>
+<tr><td>Level Up XP</td><td>{{d["playerLvlUpExp"]}}</td></tr>
+<tr><td>Screenshot</td><td><img alt="Screenshot" src="data:image/bmp;base64,{{screenshotData}}" /></td></tr>
+<tr><td>Plugins</td><td><ol>{% for p in d["plugins"] %}<li>{{p}}</li>{% endfor %}</ol></td></tr>
+
+</table>
+
+
+<h3>Inventory</h3>
+<table border="1" cellpadding="4" cellspacing="0">
+<thead><tr><th>Item name</th><th>Value</th><th>Weight</th><th>Count</th></tr></thead>
+{% for inv_class, inv_items in inventory.items() %}
+<tr><td colspan=4 bgcolor=lightGray>{{inv_class}}<br/>Total weight = {{inventory_weight[inv_class]}}</td></tr>
+    {% for inv_data in inv_items %}
+    <tr><td>{{inv_data[0]}}</td><td>{{inv_data[1]}}</td><td>{{inv_data[2]}}</td><td>{{inv_data[3]}}</td></tr>
+    {% endfor %}
+{% endfor %}
+
+</table>
+
+<p>Total inventory weight: {{total_weight}}</p>
+
+</body>
+</html>
