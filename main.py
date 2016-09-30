@@ -29,6 +29,10 @@ from qtpy import QtCore, QtGui, QtWidgets, uic
 
 import six
 
+
+#%% Application imports
+import savegame
+
 #%% Global functions
 # PyInstaller utilities
 def frozen(filename):
@@ -91,7 +95,7 @@ class ConsoleWindowLogHandler(logging.Handler, QtCore.QObject):
     object's slot.
     """
     # Qt signals
-    log = QtCore.pyqtSignal(str, name="log")
+    log = QtCore.Signal(str, name="log")
 
     def __init__(self, parent=None):
         super(ConsoleWindowLogHandler, self).__init__()
@@ -130,29 +134,17 @@ class WndMain(QtWidgets.QMainWindow):
 #        self.thread.callback = callback_fcn
 #        self.thread.finished.connect(self.on_thread_finished)
 #        self.thread.start()
-        dll = ctypes.windll.shell32
-        buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH + 1)
-        try:
-            if dll.SHGetSpecialFolderPathW(None, buf, 0x0005, False):
-                savedir = osp.join(buf.value, "My Games", "Skyrim", "Saves")
-                if not osp.exists(savedir) or not osp.isdir(savedir):
-                    raise RuntimeError("Could not find savegame directory.")
-                logging.debug("Savegame directory: %s", savedir)
-            else:
-                raise RuntimeError("Could not find savegame directory.")
-        except:
-            QtWidgets.QMessageBox.critical(self,
-                                           self.tr("Error"),
-                                           self.tr("Could not find savegame directory."))
-        self.savedir = savedir
-        savegames = [f for f in os.listdir(savedir) if f.endswith(".ess")]
+        savegames = savegame.getSaveGames()
+        # Sort by last modified time first
         savegames = sorted(savegames,
-                           key=lambda f: osp.getmtime(osp.join(savedir, f)),
+                           key=lambda f: osp.getmtime(f),
                            reverse=True)
-        for f in savegames:
-            self.listSavegames.addItem(f)
         if len(savegames):
-            self.open_savegame(savegames[0])
+            self.comboSavegames.addItem(self.tr("Select savegame"))
+#            self.comboSavegames.setCurrentIndex(0)
+        for f in savegames:
+            self.comboSavegames.addItem(osp.basename(f), f)
+#            self.open_savegame(savegames[0])
 
 
     def initUI(self):
@@ -171,23 +163,25 @@ class WndMain(QtWidgets.QMainWindow):
         e.accept()
 
     ### Qt slots
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def on_thread_finished(self):
         QtWidgets.QMessageBox.information(self,
                                           self.tr("Information"),
                                           self.tr("Thread finished."))
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def on_consoleHandler_log(self, message):
         self.txtLog.appendPlainText(message)
 
-    @QtCore.pyqtSlot()
-    def on_listSavegames_itemDoubleClicked(item):
-        open_savegame(item.text())
+    @QtCore.Slot(int)
+    def on_comboSavegames_currentIndexChanged(self, index):
+        filename = self.comboSavegames.itemData(index)
+        if filename is not None:
+            self.open_savegame(filename)
 
     ### Core functionality
     def open_savegame(self, filename):
-        filename = osp.join(self.savedir, filename)
+        print("open_savegame", filename)
 
 
 

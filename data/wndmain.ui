@@ -41,27 +41,27 @@
      </rect>
     </property>
    </widget>
-   <widget class="QListWidget" name="listSavegames">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>80</y>
-      <width>256</width>
-      <height>271</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>40</y>
+      <x>10</x>
+      <y>10</y>
       <width>101</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Savegames:</string>
+     <string>Savegame:</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="comboSavegames">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>10</y>
+      <width>971</width>
+      <height>22</height>
+     </rect>
     </property>
    </widget>
   </widget>
