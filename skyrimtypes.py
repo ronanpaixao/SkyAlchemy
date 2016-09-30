@@ -152,11 +152,22 @@ class RefID(object):
     createdid = {}
     __nameless = None
     def __init__(self, fd):
-#        fd = StringIO(struct.pack("BBB", 0x41, 0xc0, 0xf2))
-        first = unpack("uint8", fd)
-        rest = struct.Struct('>H').unpack(fd.read(2))[0]
-        self.type_ = first >> 6
-        self.value = (first & 0x3f) << 16 ^ rest
+        try:
+            first = unpack("uint8", fd)
+            rest = struct.Struct('>H').unpack(fd.read(2))[0]
+            self.type_ = first >> 6
+            self.value = (first & 0x3f) << 16 ^ rest
+        except:  # Maybe it's a number?
+            if fd in self.defaultid:
+                self.type_ = 1
+            elif fd in self.formid:
+                self.type_ = 0
+            elif fd in self.createdid:
+                self.type_ = 2
+            else:
+                self.type_ = 3
+            self.value = fd
+
         self.type = {0: "F", 1: "D", 2: "C", 3: "U"}[self.type_]
 
     @property
