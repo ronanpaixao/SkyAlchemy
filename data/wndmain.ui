@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1125</width>
-    <height>846</height>
+    <width>1002</width>
+    <height>757</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,59 +18,91 @@
     <normaloff>logo.png</normaloff>logo.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="lblLog">
-    <property name="geometry">
-     <rect>
-      <x>730</x>
-      <y>450</y>
-      <width>25</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Log:</string>
-    </property>
-   </widget>
-   <widget class="QPlainTextEdit" name="txtLog">
-    <property name="geometry">
-     <rect>
-      <x>730</x>
-      <y>470</y>
-      <width>256</width>
-      <height>192</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>101</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Savegame:</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="comboSavegames">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>10</y>
-      <width>971</width>
-      <height>22</height>
-     </rect>
-    </property>
-   </widget>
+   <layout class="QVBoxLayout" name="verticalLayout_4">
+    <item>
+     <widget class="QComboBox" name="comboSavegames"/>
+    </item>
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Savegame:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QSplitter" name="splitter_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="QTabWidget" name="tabs">
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="tabGeneral">
+        <attribute name="title">
+         <string>Savegame general data</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QTextEdit" name="textGeneral"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabIngr">
+        <attribute name="title">
+         <string>Ingredients</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QSplitter" name="splitter">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <widget class="QTableView" name="tableIngr">
+            <property name="sortingEnabled">
+             <bool>true</bool>
+            </property>
+           </widget>
+           <widget class="QTextEdit" name="textIngr"/>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabEffects">
+        <attribute name="title">
+         <string>Effects</string>
+        </attribute>
+       </widget>
+       <widget class="QWidget" name="tabComb">
+        <attribute name="title">
+         <string>Combinations</string>
+        </attribute>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QLabel" name="lblLog">
+          <property name="text">
+           <string>Log:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPlainTextEdit" name="txtLog"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1125</width>
+     <width>1002</width>
      <height>26</height>
     </rect>
    </property>
