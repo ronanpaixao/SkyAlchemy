@@ -187,6 +187,7 @@ class WndMain(QtWidgets.QMainWindow):
     ### Core functionality
     def open_savegame(self, filename):
         sg = savegame.Savegame(filename)
+        sg.populate_ids()
         html = self.dict2html(sg.d)
         self.textGeneral.setHtml(html.encode("ascii", "xmlcharrefreplace"))
         self.sg = sg
