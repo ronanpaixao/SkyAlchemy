@@ -915,6 +915,7 @@ class ARMO(Record):
     def __init__(self, fd, type_="ARMO"):
         super(ARMO, self).__init__(fd, type_)
         self.FullName = "Unnamed"
+        self.enchantment = 0
         for field in self.fields:
             if field.type == "EDID":
                 self.EditorID = unpack("zstring", field.data)
@@ -925,7 +926,7 @@ class ARMO(Record):
             elif field.type == "EAMT":
                 self.enchantment_amount = unpack("uint16", field.data)
             elif field.type == "DESC":
-                self.enchantment_amount = unpack("lstring", field.data)
+                self.Description = unpack("lstring", field.data)
             elif field.type == "DATA":
                 self.BaseValue = unpack("uint32", field.data[:4])
                 self.Weight = unpack("float", field.data[4:])
