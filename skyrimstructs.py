@@ -9,7 +9,7 @@ See LICENSE for details.
 @author: Ronan Paixão
 """
 
-from __future__ import unicode_literals
+from __future__ import unicode_literals, division
 
 from cStringIO import StringIO
 import zlib
