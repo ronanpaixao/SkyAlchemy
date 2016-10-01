@@ -261,7 +261,10 @@ class ChangeForm(object):
     #            cf.items = [unpack("InventoryItem", sdata) for i in range(invcount)]
                 self.d['inventory'] = []
                 for i in range(invcount):
-                    self.d['inventory'].append(unpack("InventoryItem", sdata))
+                    inv_item = unpack("InventoryItem", sdata)
+                    if inv_item.item.value == 0x000001F4:
+                        continue  # Skip "Unarmed" item, since it's not an item
+                    self.d['inventory'].append(inv_item)
             # Skip Animation
             # Skip Explosion
 
@@ -299,7 +302,12 @@ class ChangeForm(object):
                 if self.changeFlags & extra_data_flags:
                     self.d['extraData'] = unpack("ExtraData", sdata)
                 invcount = unpack("vsval", sdata)
-                self.d['inventory'] = [unpack("InventoryItem", sdata) for i in range(invcount)]
+                self.d['inventory'] = []
+                for i in range(invcount):
+                    inv_item = unpack("InventoryItem", sdata)
+                    if inv_item.item.value == 0x000001F4:
+                        continue  # Skip "Unarmed" item, since it's not an item
+                    self.d['inventory'].append(inv_item)
 
         elif self.type == 16:  # INGR
             self.d['ingr_data'] = unpack("uint32", data)
