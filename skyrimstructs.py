@@ -744,10 +744,15 @@ class Effect(object):
         self.Duration = 0
 
     @property
+    def MGEF(self):
+        return db['MGEF'][self.EffectID]
+
+    @property
     def Value(self):
         try:
-            return (db['MGEF'][self.EffectID].BaseCost *
-                    (self.Magnitude * self.Duration / 10) ** 1.1)
+            return (self.MGEF.BaseCost *
+                    ((self.Magnitude if self.Magnitude > 1 else 1)
+                     * (self.Duration if self.Duration != 0 else 10) / 10) ** 1.1)
         except:
             return -1
 
