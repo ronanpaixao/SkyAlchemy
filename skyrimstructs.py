@@ -810,6 +810,11 @@ class MGEF(Record):
                 else:
                     # TODO: find where DLC strings are
                     self.FullName = "DLC string: {}".format(unpack('formid', field.data))
+            elif field.type == "KSIZ":
+                ksiz = unpack("uint32", field.data)
+            elif field.type == "KWDA":
+                sdata = StringIO(field.data)
+                self.KWDA = [unpack("formid", sdata) for i in range(ksiz)]
             elif field.type == "DATA":
                 fdata = StringIO(field.data)
                 self.Flags = unpack("uint32", fdata)
