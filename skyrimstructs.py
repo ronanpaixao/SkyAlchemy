@@ -1211,6 +1211,21 @@ class LIGH(Record):
 _types["LIGH"] = LIGH
 
 
+class KYWD(Record):
+    def __init__(self, fd, type_="KYWD"):
+        super(KYWD, self).__init__(fd, type_)
+        for field in self.fields:
+            if field.type == "EDID":
+                self.EditorID = unpack("zstring", field.data)
+
+        db['KYWD'][self.id] = self  # Adding to MISC database
+
+    def __repr__(self):
+        return "KYWD<{:08X}:{}>".format(self.id, self.EditorID)
+
+_types["KYWD"] = KYWD
+
+
 #%% Group
 class Group(object):
     def __init__(self, fd, type_="GRUP"):
@@ -1244,4 +1259,4 @@ class Group(object):
 _read_record_types = {'INGR': INGR, 'GRUP': Group, 'MGEF': MGEF, 'ALCH': ALCH,
                       'ENCH': ENCH, 'ARMO': ARMO, 'MISC': MISC, 'SCRL': SCRL,
                       'BOOK': BOOK, 'WEAP': WEAP, 'AMMO': AMMO, 'SLGM': SLGM,
-                      'KEYM': KEYM, 'LIGH': LIGH}
+                      'KEYM': KEYM, 'LIGH': LIGH, 'KYWD': KYWD}
