@@ -13,11 +13,53 @@ from __future__ import unicode_literals, division
 
 from cStringIO import StringIO
 import zlib
+import ctypes
 
 
 #%% unpack and data
 from skyrimtypes import _types, unpack, RefID
 from skyrimdata import db
+
+#%%
+c_uint32 = ctypes.c_uint32
+class MGEFflagbits(ctypes.LittleEndianStructure):
+    _fields_ = [
+        ("Hostile", c_uint32, 1),
+        ("Recover", c_uint32, 1),
+        ("Detrimental", c_uint32, 1),
+        ("SnaptoNavmesh", c_uint32, 1),
+        ("NoHitEvent", c_uint32, 1),
+        ("Unk1", c_uint32, 1),
+        ("Unk2", c_uint32, 1),
+        ("Unk3", c_uint32, 1),
+        ("DispelEffects", c_uint32, 1),
+        ("NoDuration", c_uint32, 1),
+        ("NoMagnitude", c_uint32, 1),
+        ("NoArea", c_uint32, 1),
+        ("FXPersist", c_uint32, 1),
+        ("Unk4", c_uint32, 1),
+        ("GoryVisual", c_uint32, 1),
+        ("HideinUI", c_uint32, 1),
+        ("Unk5", c_uint32, 1),
+        ("NoRecast", c_uint32, 1),
+        ("Unk6", c_uint32, 1),
+        ("Unk7", c_uint32, 1),
+        ("Unk8", c_uint32, 1),
+        ("PowerAffectsMagnitude", c_uint32, 1),
+        ("PowerAffectsDuration", c_uint32, 1),
+        ("Unk9", c_uint32, 1),
+        ("Unk10", c_uint32, 1),
+        ("Unk11", c_uint32, 1),
+        ("Painless", c_uint32, 1),
+        ("NoHitEffect", c_uint32, 1),
+        ("NoDeathDispel", c_uint32, 1),
+    ]
+
+class MGEFflags(ctypes.Union):
+    _fields_ = [("b", MGEFflagbits), ("int", c_uint32)]
+    def __init__(self, uint32):
+        super(MGEFflags, self).__init__()
+        self.int = uint32
 
 #%% Stat
 _stat_categories = {
@@ -834,6 +876,15 @@ class MGEF(Record):
             elif field.type == "DNAM":
                 self.Description = unpack("lstring", field.data)
         db['MGEF'][self.id] = self
+
+    @property
+    def flags(self):
+        return MGEFflags(self.Flags)
+
+    @property
+    def alch_type(self):
+        # 0x1 = Hostile, 0x4 = Detrimental
+        return {True: "poison", False: "potion"}[bool(self.Flags & (0x1 | 0x4))]
 
     def __repr__(self):
         return "MGEF<{:08X}:{}>".format(self.id, self.FullName)
