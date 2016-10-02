@@ -878,7 +878,7 @@ class MGEF(Record):
         db['MGEF'][self.id] = self
 
     @property
-    def flags(self):
+    def MGEFflags(self):
         return MGEFflags(self.Flags)
 
     @property
