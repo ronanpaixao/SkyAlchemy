@@ -22,7 +22,7 @@ from cStringIO import StringIO
 #%% Data records to store
 # from skyrimstructs._read_record_types.keys()
 db_types = ['MGEF', 'INGR', 'ALCH', 'ARMO', 'ENCH', 'MISC', 'SCRL', 'BOOK',
-            'WEAP', 'AMMO', 'SLGM', 'KEYM']
+            'WEAP', 'AMMO', 'SLGM', 'KEYM', 'KYWD']
 # Only load once
 #if 'db' not in locals():
 #    print("db not in locals!")
