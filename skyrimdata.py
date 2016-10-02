@@ -108,6 +108,9 @@ def loadData():
 
     for k, v in db.iteritems():
         RefID.defaultid.update(v)
+    db['unKYWD'] = {}
+    for k, v in db['KYWD'].items():
+        db['unKYWD'][v.EditorID] = k
 
 #%% Execution
 if __name__ == "__main__":
