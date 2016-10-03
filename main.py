@@ -91,23 +91,11 @@ class CallbackThread(QtCore.QThread):
     def run(self):
         self.ret = self.callback(self)
 
-#%% Qt-enabled logging handler. Allows logging to GUI
-class ConsoleWindowLogHandler(logging.Handler, QtCore.QObject):
-    """Qt-enabled logging handler
+    def stop(self):
+        self.running = False
+        self.queue.put((0, 'stop'))
 
-    Allows logging to GUI by connecting the ``log`` signal to the receiving
-    object's slot.
-    """
-    # Qt signals
-    log = QtCore.Signal(str, name="log")
 
-    def __init__(self, parent=None):
-        super(ConsoleWindowLogHandler, self).__init__()
-        QtCore.QObject.__init__(self, parent)
-
-    def emit(self, logRecord):
-        message = unicode(self.format(logRecord))
-        self.log.emit(message)
 
 #%% Main window class
 class WndMain(QtWidgets.QMainWindow):
@@ -120,15 +108,11 @@ class WndMain(QtWidgets.QMainWindow):
         # Initialize UI (open main window)
         self.initUI()
         # Logging setup
-        consoleHandler = ConsoleWindowLogHandler(self.txtLog)
         logger = logging.getLogger()
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
-        consoleHandler.setFormatter(logger.handlers[0].formatter)
         logger.name = "<app_name>"
-        logger.addHandler(consoleHandler)
-        consoleHandler.log.connect(self.on_consoleHandler_log)
         self.logger = logger
         # Setup Jinja templating
         self.env = Environment(loader=FileSystemLoader(frozen('data')))
@@ -172,6 +156,14 @@ class WndMain(QtWidgets.QMainWindow):
         # Load window geometry and state
         self.restoreGeometry(self.settings.value("geometry", ""))
         self.restoreState(self.settings.value("windowState", ""))
+        # Status bar
+        statusBar = self.statusBar()
+        self.progressBar = QtWidgets.QProgressBar(statusBar)
+        statusBar.addPermanentWidget(self.progressBar, 0)
+        self.progressCancel = QtWidgets.QPushButton(statusBar)
+        self.progressCancel.setText(self.tr("Cancel"))
+        self.progressCancel.setEnabled(False)
+        statusBar.addPermanentWidget(self.progressCancel, 0)
         self.show()
 
     ### Function overrides:
@@ -187,10 +179,6 @@ class WndMain(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.information(self,
                                           self.tr("Information"),
                                           self.tr("Thread finished."))
-
-    @QtCore.Slot(str)
-    def on_consoleHandler_log(self, message):
-        self.txtLog.appendPlainText(message)
 
     @QtCore.Slot(int)
     def on_comboSavegames_currentIndexChanged(self, index):

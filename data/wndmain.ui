@@ -83,20 +83,6 @@
         </attribute>
        </widget>
       </widget>
-      <widget class="QWidget" name="">
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QLabel" name="lblLog">
-          <property name="text">
-           <string>Log:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPlainTextEdit" name="txtLog"/>
-        </item>
-       </layout>
-      </widget>
      </widget>
     </item>
    </layout>
