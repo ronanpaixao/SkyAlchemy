@@ -874,7 +874,9 @@ class MGEF(Record):
             elif field.type == "ESCE":
                 self.CounterEffects = unpack("formid", field.data)
             elif field.type == "DNAM":
-                self.Description = unpack("lstring", field.data)
+                desc = unpack("lstring", field.data)
+                self.Description = desc.translate({ord(c): ord(t) for c, t in
+                                                   [('<','{'), ('>', '}')]})
         db['MGEF'][self.id] = self
 
     @property
