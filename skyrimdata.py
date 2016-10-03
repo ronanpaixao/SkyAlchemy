@@ -166,6 +166,7 @@ if __name__ == "__main__":
                     record = Record(f, type_)
                 records.append(record)
                 print(i, record, f.tell())
+                sys.stdout.flush()
                 i += 1
 
             f.close()
