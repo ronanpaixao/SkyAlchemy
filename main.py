@@ -23,6 +23,10 @@ import argparse
 import base64
 from io import BytesIO
 from collections import OrderedDict
+try:
+    from queue import PriorityQueue  # PY3
+except ImportError:
+    from Queue import PriorityQueue  # PY2
 
 #%% Setup PyQt's v2 APIs. Must be done before importing PyQt or PySide
 import rthook
@@ -36,6 +40,7 @@ from jinja2 import Environment, FileSystemLoader
 
 #%% Application imports
 import savegame
+import skyrimdata
 
 #%% Global functions
 # PyInstaller utilities
@@ -65,31 +70,33 @@ elif sys.platform == 'win32':
     open_default_program = os.startfile
 
 #%% Simple thread example (always useful to avoid locking the GUI)
-class CallbackThread(QtCore.QThread):
-    """Simple threading example.
+class SavegameThread(QtCore.QThread):
+    """Savegame thread.
 
-    The thread executes a callback function. Use self if you want to store
-    variables as the thread instance's attributes. It is also useful to use
-    arguments as default values. This examples prints after 2 seconds:
-
-    >>> def callback_fcn(self, t=2):
-    ...     self.sleep(t)
-    ...     print("Thread Finished")
-    ...
-    >>> thread = CallbackThread()
-    >>> thread.callback = callback_fcn
-    >>> thread.start()  # Finishes after 2 seconds
+    Concentrates all intensive processing to avoid GUI freezes.
     """
-    def __init__(self, *args, **kwargs):
-        super(CallbackThread, self).__init__(*args, **kwargs)
-        self.callback = lambda *args: None
-        self.ret = None
+    newJob = QtCore.Signal(str, int)
+    def __init__(self, queue, *args, **kwargs):
+        queue.put((1, 'load'))
+        self.queue = queue
+        self.running = True
+        super(SavegameThread, self).__init__(*args, **kwargs)
 
     def __del__(self):
         self.wait()
 
     def run(self):
-        self.ret = self.callback(self)
+        while True:
+            job = self.queue.get()
+            prio, job, data = job[0], job[1], job[2:]
+            print("SavegameThread job:", job)
+            if job == 'stop':
+                break
+            else:
+                self.newJob.emit(job, 0)
+            if job == 'load':
+                skyrimdata.loadData()
+                self.newJob.emit("", 0)
 
     def stop(self):
         self.running = False
@@ -129,14 +136,12 @@ class WndMain(QtWidgets.QMainWindow):
             ('KEYM', self.tr("Keys")),
             ('Other', self.tr("Other")),
         ])
-        # Threading example with new-style connections
-#        self.thread = CallbackThread(self)
-#        def callback_fcn(self, t=2):  # Use defaults to pass arguments
-#            self.sleep(t)
-#            logging.info("Thread finished.")  # Shouldn't translate log msgs
-#        self.thread.callback = callback_fcn
+        # Threading setup
+        self.queue = PriorityQueue()
+        self.thread = SavegameThread(self.queue, self)
 #        self.thread.finished.connect(self.on_thread_finished)
-#        self.thread.start()
+        self.thread.newJob.connect(self.on_thread_newJob)
+        self.thread.start()
         savegames = savegame.getSaveGames()
         # Sort by last modified time first
         savegames = sorted(savegames,
@@ -179,6 +184,17 @@ class WndMain(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.information(self,
                                           self.tr("Information"),
                                           self.tr("Thread finished."))
+    @QtCore.Slot(str, int)
+    def on_thread_newJob(self, job, maximum):
+        if job == 'load':
+            self.statusBar().showMessage(self.tr("Loading data..."))
+            self.progressBar.setMaximum(0)
+            self.progressBar.setMinimum(0)
+            self.progressCancel.setEnabled(False)
+        elif job == '':
+            self.progressBar.setMaximum(1)
+            self.progressCancel.setEnabled(False)
+            self.statusBar().clearMessage()
 
     @QtCore.Slot(int)
     def on_comboSavegames_currentIndexChanged(self, index):
