@@ -798,9 +798,13 @@ class Effect(object):
         except:
             return -1
 
+    @property
+    def Description(self):
+        return self.MGEF.Description.format(mag=self.Magnitude, dur=self.Duration)
+
     def __repr__(self):
-        return "Effect<{}, {} pts for {} sec>".format(self.MGEF.FullName,
-            self.Magnitude, self.Duration)
+        return "Effect<{}, {}>".format(self.MGEF.FullName, self.Description)
+
 _types["Effect"] = Effect
 
 
