@@ -14,7 +14,7 @@ from __future__ import unicode_literals, division
 from cStringIO import StringIO
 import zlib
 import ctypes
-
+import math
 
 #%% unpack and data
 from skyrimtypes import _types, unpack, RefID
@@ -790,9 +790,10 @@ class Effect(object):
     @property
     def Value(self):
         try:
-            return (self.MGEF.BaseCost *
-                    ((self.Magnitude if self.Magnitude > 1 else 1)
-                     * (self.Duration if self.Duration != 0 else 10) / 10) ** 1.1)
+            return math.floor(self.MGEF.BaseCost *
+                              ((self.Magnitude if self.Magnitude > 1 else 1)
+                               * (self.Duration if self.Duration != 0 else 10)
+                               / 10) ** 1.1)
         except:
             return -1
 
