@@ -22,7 +22,6 @@ import ctypes.wintypes
 #%% unpack and data
 from skyrimtypes import unpack, RefID
 import skyrimdata
-skyrimdata.loadData()
 
 
 #%%
