@@ -76,11 +76,27 @@ class SavegameThread(QtCore.QThread):
     Concentrates all intensive processing to avoid GUI freezes.
     """
     newJob = QtCore.Signal(str, int)
+    generalData = QtCore.Signal(str)
     def __init__(self, queue, *args, **kwargs):
         queue.put((1, 'load'))
         self.queue = queue
         self.running = True
         super(SavegameThread, self).__init__(*args, **kwargs)
+        # Setup Jinja templating
+        self.env = Environment(loader=FileSystemLoader(frozen('data')))
+        self.inv_types = OrderedDict([
+            ('ARMO', self.tr("Armor")),
+            ('WEAP', self.tr("Weapons")),
+            ('ALCH', self.tr("Potions")),
+            ('INGR', self.tr("Ingredients")),
+            ('SCRL', self.tr("Scrolls")),
+            ('MISC', self.tr("Miscellaneous")),
+            ('BOOK', self.tr("Books")),
+            ('AMMO', self.tr("Ammunition")),
+            ('SLGM', self.tr("Soul gems")),
+            ('KEYM', self.tr("Keys")),
+            ('Other', self.tr("Other")),
+        ])
 
     def __del__(self):
         self.wait()
@@ -97,11 +113,47 @@ class SavegameThread(QtCore.QThread):
             if job == 'load':
                 skyrimdata.loadData()
                 self.newJob.emit("", 0)
+            elif job == 'savegame':
+                filename = data[0]
+                self.newJob.emit("savegame", os.stat(filename).st_size)
+                sg = savegame.Savegame(filename)
+                sg.populate_ids()
+                html = self.dict2html(sg.d)
+                self.sg = sg
+                self.generalData.emit(html.encode("ascii", "xmlcharrefreplace"))
+                self.newJob.emit("", 0)
 
     def stop(self):
         self.running = False
         self.queue.put((0, 'stop'))
 
+    def dict2html(self, dic):
+        template_filename = 'general_'+QtCore.QLocale().name()+'.html'
+        buf = BytesIO()
+        dic['screenshotImage'].save(buf, format="BMP")
+        template = self.env.get_template(template_filename)
+        inventory = {v: [] for v in self.inv_types.values()}
+        inventory_weight = {v: 0 for v in self.inv_types.values()}
+        for inv_item in dic['inventory']:
+            # TODO: fix torch (MISC ID 0x0001D4EC)
+            if inv_item.item.type not in {'C', 'F'} and inv_item.itemcount>0:
+                item_ref = inv_item.item.name
+                type_ = self.inv_types.get(inv_item.item.name.type,
+                                           self.inv_types['Other'])
+                inventory[type_].append((item_ref.FullName,
+                                         item_ref.Value,
+                                         item_ref.Weight,
+                                         inv_item.itemcount))
+                inventory_weight[type_] += item_ref.Weight * inv_item.itemcount
+        for item_list in inventory.values():
+            item_list.sort()
+        total_weight = sum(inventory_weight.values())
+        html = template.render(d=dic, screenshotData=
+                               base64.b64encode(buf.getvalue()),
+                               inventory=inventory,
+                               inventory_weight=inventory_weight,
+                               total_weight=total_weight)
+        return html
 
 
 #%% Main window class
@@ -121,26 +173,12 @@ class WndMain(QtWidgets.QMainWindow):
                             datefmt='%Y-%m-%d %H:%M:%S')
         logger.name = "<app_name>"
         self.logger = logger
-        # Setup Jinja templating
-        self.env = Environment(loader=FileSystemLoader(frozen('data')))
-        self.inv_types = OrderedDict([
-            ('ARMO', self.tr("Armor")),
-            ('WEAP', self.tr("Weapons")),
-            ('ALCH', self.tr("Potions")),
-            ('INGR', self.tr("Ingredients")),
-            ('SCRL', self.tr("Scrolls")),
-            ('MISC', self.tr("Miscellaneous")),
-            ('BOOK', self.tr("Books")),
-            ('AMMO', self.tr("Ammunition")),
-            ('SLGM', self.tr("Soul gems")),
-            ('KEYM', self.tr("Keys")),
-            ('Other', self.tr("Other")),
-        ])
         # Threading setup
         self.queue = PriorityQueue()
         self.thread = SavegameThread(self.queue, self)
 #        self.thread.finished.connect(self.on_thread_finished)
         self.thread.newJob.connect(self.on_thread_newJob)
+        self.thread.generalData.connect(self.on_thread_generalData)
         self.thread.start()
         savegames = savegame.getSaveGames()
         # Sort by last modified time first
@@ -184,6 +222,17 @@ class WndMain(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.information(self,
                                           self.tr("Information"),
                                           self.tr("Thread finished."))
+
+    @QtCore.Slot(int)
+    def on_comboSavegames_currentIndexChanged(self, index):
+        filename = self.comboSavegames.itemData(index)
+        if filename is not None:
+            self.open_savegame(filename)
+
+    ### Core functionality
+    def open_savegame(self, filename):
+        self.queue.put((2, 'savegame', filename))
+
     @QtCore.Slot(str, int)
     def on_thread_newJob(self, job, maximum):
         if job == 'load':
@@ -195,48 +244,13 @@ class WndMain(QtWidgets.QMainWindow):
             self.progressBar.setMaximum(1)
             self.progressCancel.setEnabled(False)
             self.statusBar().clearMessage()
+        elif job == 'savegame':
+            self.statusBar().showMessage(self.tr("Loading savegame..."))
+            self.progressBar.setMaximum(maximum)
 
-    @QtCore.Slot(int)
-    def on_comboSavegames_currentIndexChanged(self, index):
-        filename = self.comboSavegames.itemData(index)
-        if filename is not None:
-            self.open_savegame(filename)
-
-    ### Core functionality
-    def open_savegame(self, filename):
-        sg = savegame.Savegame(filename)
-        sg.populate_ids()
-        html = self.dict2html(sg.d)
-        self.textGeneral.setHtml(html.encode("ascii", "xmlcharrefreplace"))
-        self.sg = sg
-
-    def dict2html(self, dic):
-        template_filename = 'general_'+QtCore.QLocale().name()+'.html'
-        buf = BytesIO()
-        dic['screenshotImage'].save(buf, format="BMP")
-        template = self.env.get_template(template_filename)
-        inventory = {v: [] for v in self.inv_types.values()}
-        inventory_weight = {v: 0 for v in self.inv_types.values()}
-        for inv_item in dic['inventory']:
-            # TODO: fix torch (MISC ID 0x0001D4EC)
-            if inv_item.item.type not in {'C', 'F'} and inv_item.itemcount>0:
-                item_ref = inv_item.item.name
-                type_ = self.inv_types.get(inv_item.item.name.type,
-                                           self.inv_types['Other'])
-                inventory[type_].append((item_ref.FullName,
-                                         item_ref.Value,
-                                         item_ref.Weight,
-                                         inv_item.itemcount))
-                inventory_weight[type_] += item_ref.Weight * inv_item.itemcount
-        for item_list in inventory.values():
-            item_list.sort()
-        total_weight = sum(inventory_weight.values())
-        html = template.render(d=dic, screenshotData=
-                               base64.b64encode(buf.getvalue()),
-                               inventory=inventory,
-                               inventory_weight=inventory_weight,
-                               total_weight=total_weight)
-        return html
+    @QtCore.Slot(str)
+    def on_thread_generalData(self, html):
+        self.textGeneral.setHtml(html)
 
 
 #%% Main execution
