@@ -117,7 +117,9 @@ class SavegameThread(QtCore.QThread):
             elif job == 'savegame':
                 filename = data[0]
                 self.newJob.emit("savegame", os.stat(filename).st_size)
-                sg = savegame.Savegame(filename)
+                sg = savegame.Savegame(filename, load_now=False)
+                for status in sg.loadGame():
+                    self.jobStatus.emit(status)
                 sg.populate_ids()
                 html = self.dict2html(sg.d)
                 self.sg = sg

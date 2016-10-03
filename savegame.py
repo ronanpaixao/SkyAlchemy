@@ -29,7 +29,14 @@ class Savegame(object):
     """This class loads a The Elder Scrolls V: Skyrim savegame file and parses
     useful information.
     """
-    def __init__(self, filename):
+    def __init__(self, filename, load_now=True):
+        self.filename = filename
+        if load_now:
+            for i in self.loadGame():
+                pass
+
+    def loadGame(self):
+        filename = self.filename
         #%%
         d = OrderedDict()  # Data storage
         f = open(filename, 'rb')  # TODO: replace
@@ -38,6 +45,7 @@ class Savegame(object):
 #        with open(filename, 'rb') as f:
             # File
             d['magic'] = f.read(13)
+            yield f.tell()
             if d['magic'] != 'TESV_SAVEGAME':
                 raise AssertionError("Incorrect magic in file header")
             d['headerSize'] = unpack("uint32", f)
@@ -58,12 +66,14 @@ class Savegame(object):
             d['filetime'] = unpack("filetime", header)
             d['shotWidth'] = unpack("uint32", header)
             d['shotHeight'] = unpack("uint32", header)
+            yield f.tell()
             # Back to file
             d['screenshotData'] = f.read(3*d['shotWidth']*d['shotHeight'])
             from PIL import Image
             d['screenshotImage'] = Image.frombytes("RGB",
                                          (d['shotWidth'], d['shotHeight']),
                                          d['screenshotData'])
+            yield f.tell()
             d['formVersion'] = unpack("uint8", f)
             d['pluginInfoSize'] = unpack("uint32", f)
             # Plugin
@@ -71,6 +81,7 @@ class Savegame(object):
             d['pluginCount'] = unpack("uint8", plugin)
             d['plugins'] = [unpack("wstring", plugin)
                             for i in range(d['pluginCount'])]
+            yield f.tell()
             # File Location Table
             formIDArrayCountOffset = unpack("uint32", f)
             unknownTable3Offset = unpack("uint32", f)
@@ -83,42 +94,53 @@ class Savegame(object):
             globalDataTable3Count = unpack("uint32", f)
             changeFormCount = unpack("uint32", f)
             f.read(4*15)  # unused
+            yield f.tell()
             # Global Data 1
             f.seek(globalDataTable1Offset)
             gdata1 = []
             for i in range(globalDataTable1Count):
                 gdata1.append(unpack("globalData", f))
+                yield f.tell()
             # Global Data 2
             f.seek(globalDataTable2Offset)
             gdata2 = []
             for i in range(globalDataTable2Count):
                 gdata2.append(unpack("globalData", f))
+                yield f.tell()
             # changeForms
             f.seek(changeFormsOffset)
-            d['changeforms'] = [unpack("ChangeForm", f) for i in
-                range(changeFormCount)]
+            d_changeforms = []
+            for i in range(changeFormCount):
+                d_changeforms.append(unpack("ChangeForm", f))
+                yield f.tell()
+            d['changeforms'] = d_changeforms
             # Global Data 3
+            yield f.tell()
             f.seek(globalDataTable3Offset)
             gdata3 = []
             for i in range(globalDataTable3Count):
                 gdata3.append(unpack("globalData", f))
+                yield f.tell()
             d['gdata'] = {v[1]:v[2] for v in (gdata1 + gdata2 + gdata3)}
             # formID
             f.seek(formIDArrayCountOffset)
             formIDArrayCount = unpack("uint32", f)
             d['formid'] = struct.Struct('{}I'.format(formIDArrayCount)).unpack(
                 f.read(formIDArrayCount*4))
+            yield f.tell()
             # Visited Worldspace
             visitedWorldspaceArrayCount = unpack("uint32", f)
             d['visitedWorldspaceArray'] = struct.Struct('{}I'.format(
                 visitedWorldspaceArrayCount)).unpack(f.read(
                 visitedWorldspaceArrayCount*4))
+            yield f.tell()
             # unknownTable3
             f.seek(unknownTable3Offset)
             ukt3count = unpack("uint32", f)
             assert(len(f.read()) == ukt3count)
             # EOF
             assert(f.read() == "")
+            yield f.tell()
             # Inventory
             for cf in d['changeforms']:
                 if cf.type == 1 and cf.formid.value == 0x14:
