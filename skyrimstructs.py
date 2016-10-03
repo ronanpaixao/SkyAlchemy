@@ -205,11 +205,9 @@ _gdata_type_names = {
 }
 
 def read_globalData(f):
-    startpos = f.tell()
     type_ = unpack("uint32", f)
     type_name, type_decoder = _gdata_type_names[type_]
     length = unpack("uint32", f)
-    print type_name, startpos, "->", f.tell()+length
     return (type_, type_name, type_decoder(StringIO(f.read(length))))
 _types["globalData"] = read_globalData
 
