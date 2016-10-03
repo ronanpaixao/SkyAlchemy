@@ -76,6 +76,7 @@ class SavegameThread(QtCore.QThread):
     Concentrates all intensive processing to avoid GUI freezes.
     """
     newJob = QtCore.Signal(str, int)
+    jobStatus = QtCore.Signal(int)
     generalData = QtCore.Signal(str)
     def __init__(self, queue, *args, **kwargs):
         queue.put((1, 'load'))
@@ -178,6 +179,7 @@ class WndMain(QtWidgets.QMainWindow):
         self.thread = SavegameThread(self.queue, self)
 #        self.thread.finished.connect(self.on_thread_finished)
         self.thread.newJob.connect(self.on_thread_newJob)
+        self.thread.jobStatus.connect(self.on_thread_jobStatus)
         self.thread.generalData.connect(self.on_thread_generalData)
         self.thread.start()
         savegames = savegame.getSaveGames()
@@ -247,6 +249,10 @@ class WndMain(QtWidgets.QMainWindow):
         elif job == 'savegame':
             self.statusBar().showMessage(self.tr("Loading savegame..."))
             self.progressBar.setMaximum(maximum)
+
+    @QtCore.Slot(int)
+    def on_thread_jobStatus(self, status):
+        self.progressBar.setValue(status)
 
     @QtCore.Slot(str)
     def on_thread_generalData(self, html):
