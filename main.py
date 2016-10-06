@@ -185,7 +185,7 @@ class IngrTable(QtCore.QAbstractTableModel):
     def addItem(self, formid, count):
         self.layoutAboutToBeChanged.emit()
         ingr = db['INGR'][formid]
-        self.ingrs.append((ingr.FullName, count, ingr.Value, ingr.Weight,
+        self.ingrs.append((formid, ingr.FullName, count, ingr.Value, ingr.Weight,
                            "{:08X}".format(formid)))
         self.layoutChanged.emit()
 
@@ -194,7 +194,7 @@ class IngrTable(QtCore.QAbstractTableModel):
             return None
         elif role != QtCore.Qt.DisplayRole:
             return None
-        return self.ingrs[index.row()][index.column()]
+        return self.ingrs[index.row()][index.column() + 1]
 
     def headerData(self, col, orientation, role):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -218,8 +218,6 @@ class IngrTable(QtCore.QAbstractTableModel):
         self.layoutAboutToBeChanged.emit()
         self.ingrs = []
         self.layoutChanged.emit()
-
-
 
 
 #%% Main window class
@@ -259,6 +257,8 @@ class WndMain(QtWidgets.QMainWindow):
         for f in savegames:
             self.comboSavegames.addItem(osp.basename(f), f)
 #            self.open_savegame(savegames[0])
+        # Setup Jinja templating
+        self.env = Environment(loader=FileSystemLoader(frozen('data')))
 
 
     def initUI(self):
@@ -277,6 +277,8 @@ class WndMain(QtWidgets.QMainWindow):
         statusBar.addPermanentWidget(self.progressCancel, 0)
         self.tableIngrModel = IngrTable([], self.tableIngr)
         self.tableIngr.setModel(self.tableIngrModel)
+        self.tableIngr.selectionModel().selectionChanged.connect(
+            self.on_tableIngr_selectionChanged)
         self.show()
 
     ### Function overrides:
@@ -329,9 +331,18 @@ class WndMain(QtWidgets.QMainWindow):
 
     @QtCore.Slot(int, int)
     def on_thread_inventoryItem(self, count, formid):
-#        ingr = skyrimdata.db['INGR'][formid]
-#        row = (QtWidgets.QTableWidgetItem()
         self.tableIngr.model().addItem(formid, count)
+
+    @QtCore.Slot(QtCore.QItemSelection, QtCore.QItemSelection)
+    def on_tableIngr_selectionChanged(self, selected, deselected):
+        print("on_tableIngr_selectionChanged", selected.indexes()[0].row())
+
+        formid = self.tableIngrModel.ingrs[selected.indexes()[0].row()][0]
+        ingr = skyrimdata.db['INGR'][formid]
+        template_filename = 'ingr_'+QtCore.QLocale().name()+'.html'
+        template = self.env.get_template(template_filename)
+        html = template.render(ingr=ingr)
+        self.textIngr.setHtml(html)
 
 
 #%% Main execution
