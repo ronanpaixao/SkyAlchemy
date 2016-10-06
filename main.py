@@ -175,6 +175,8 @@ class IngrTable(QtCore.QAbstractTableModel):
                         self.tr("Value"),
                         self.tr("Weight"),
                         self.tr("FormID")]
+        self.sort_col = 0
+        self.sort_order = QtCore.Qt.AscendingOrder
 
     def rowCount(self, parent):
         return len(self.ingrs)
@@ -187,7 +189,8 @@ class IngrTable(QtCore.QAbstractTableModel):
         ingr = db['INGR'][formid]
         self.ingrs.append((formid, ingr.FullName, count, ingr.Value, ingr.Weight,
                            "{:08X}".format(formid)))
-        self.layoutChanged.emit()
+        self.sort(self.sort_col, self.sort_order)
+#        self.layoutChanged.emit()
 
     def data(self, index, role):
         if not index.isValid():
@@ -206,6 +209,8 @@ class IngrTable(QtCore.QAbstractTableModel):
     def sort(self, Ncol, order):
         """Sort table by given column number.
         """
+        self.sort_col = Ncol
+        self.sort_order = order
         self.layoutAboutToBeChanged.emit()
 #        self.emit(SIGNAL("layoutAboutToBeChanged()"))
         self.ingrs = sorted(self.ingrs, key=operator.itemgetter(Ncol + 1))
@@ -279,6 +284,7 @@ class WndMain(QtWidgets.QMainWindow):
         self.tableIngr.setModel(self.tableIngrModel)
         self.tableIngr.selectionModel().selectionChanged.connect(
             self.on_tableIngr_selectionChanged)
+        self.tableIngr.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.show()
 
     ### Function overrides:
