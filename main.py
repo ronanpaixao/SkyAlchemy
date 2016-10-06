@@ -335,8 +335,6 @@ class WndMain(QtWidgets.QMainWindow):
 
     @QtCore.Slot(QtCore.QItemSelection, QtCore.QItemSelection)
     def on_tableIngr_selectionChanged(self, selected, deselected):
-        print("on_tableIngr_selectionChanged", selected.indexes()[0].row())
-
         formid = self.tableIngrModel.ingrs[selected.indexes()[0].row()][0]
         ingr = skyrimdata.db['INGR'][formid]
         template_filename = 'ingr_'+QtCore.QLocale().name()+'.html'
