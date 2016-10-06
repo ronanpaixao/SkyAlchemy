@@ -183,9 +183,11 @@ class IngrTable(QtCore.QAbstractTableModel):
         return len(self.headers)
 
     def addItem(self, formid, count):
+        self.layoutAboutToBeChanged.emit()
         ingr = db['INGR'][formid]
         self.ingrs.append((ingr.FullName, count, ingr.Value, ingr.Weight,
                            "{:08X}".format(formid)))
+        self.layoutChanged.emit()
 
     def data(self, index, role):
         if not index.isValid():
