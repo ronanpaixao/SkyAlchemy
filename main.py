@@ -339,7 +339,11 @@ class WndMain(QtWidgets.QMainWindow):
         ingr = skyrimdata.db['INGR'][formid]
         template_filename = 'ingr_'+QtCore.QLocale().name()+'.html'
         template = self.env.get_template(template_filename)
-        html = template.render(ingr=ingr)
+        val_weight = ingr.Value/ingr.Weight
+        count = self.tableIngrModel.ingrs[selected.indexes()[0].row()][2]
+        weight_count = ingr.Weight * count
+        html = template.render(ingr=ingr, val_weight=val_weight, count=count,
+                               weight_count=weight_count)
         self.textIngr.setHtml(html)
 
 
