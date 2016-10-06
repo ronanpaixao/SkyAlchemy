@@ -1,0 +1,48 @@
+<html>
+<head>
+<title>Ingredient data</title>
+<style>
+table {
+    border-collapse: collapse;
+    white-space: nowrap;
+}
+
+table, th, td {
+    border-style: solid;
+    border-color: black;
+}
+</style>
+</head>
+<body>
+<h3>Ingredient data</h3>
+<table border="1" cellpadding="4" cellspacing="0">
+<!--thead><tr><th>Property</th><th>Value</th></tr></thead-->
+<tr><td>Editor ID</td><td>{{ingr.EditorID}}</tr>
+<tr><td>Full Name</td><td>{{ingr.FullName}}</td></tr>
+<tr><td>Value</td><td>{{ingr.Value}}</td></tr>
+<tr><td>Weight</td><td>{{'%g' % ingr.Weight}}</td></tr>
+<tr><td>Value/Weight</td><td>{{'%g' % val_weight}}</td></tr>
+</table>
+
+<h3>Inventory data</h3>
+<table border="1" cellpadding="4" cellspacing="0">
+<tr><td>Count</td><td>{{count}}</td></tr>
+<tr><td>Weight &#xd7; Count</td><td>{{'%g' % weight_count}}</td></tr>
+</table>
+
+<h3>Effects:</h3>
+
+<table border="1" cellpadding="4" cellspacing="0">
+<thead><tr bgcolor=lightGray><th>Item name</th><th>Value</th><th>Description</th></tr></thead>
+{% for effect in ingr.effects %}
+    {% if effect.MGEF.alch_type == "poison" %}
+    <tr style="color: rgb(156,0,6); background-color: rgb(255,199,206)"><td>{{effect.MGEF.FullName}}</td><td>{{effect.Value}}</td><td>{{effect.Description}}</td></tr>
+    {% else %}
+    <tr style="color: rgb(0,97,0); background-color: rgb(198,239,206)"><td>{{effect.MGEF.FullName}}</td><td>{{effect.Value}}</td><td>{{effect.Description}}</td></tr>
+    {% endif %}
+{% endfor %}
+
+</table>
+
+</body>
+</html>
