@@ -27,6 +27,7 @@ try:
     from queue import PriorityQueue  # PY3
 except ImportError:
     from Queue import PriorityQueue  # PY2
+import operator
 
 #%% Setup PyQt's v2 APIs. Must be done before importing PyQt or PySide
 import rthook
@@ -41,6 +42,7 @@ from jinja2 import Environment, FileSystemLoader
 #%% Application imports
 import savegame
 import skyrimdata
+from skyrimdata import db
 
 #%% Global functions
 # PyInstaller utilities
@@ -78,6 +80,7 @@ class SavegameThread(QtCore.QThread):
     newJob = QtCore.Signal(str, int)
     jobStatus = QtCore.Signal(int)
     generalData = QtCore.Signal(str)
+    inventoryItem = QtCore.Signal(int, int)
     def __init__(self, queue, *args, **kwargs):
         queue.put((1, 'load'))
         self.queue = queue
@@ -124,6 +127,8 @@ class SavegameThread(QtCore.QThread):
                 html = self.dict2html(sg.d)
                 self.sg = sg
                 self.generalData.emit(html.encode("ascii", "xmlcharrefreplace"))
+                for count, formid in sg.player_ingrs():
+                    self.inventoryItem.emit(count, formid)
                 self.newJob.emit("", 0)
 
     def stop(self):
@@ -159,6 +164,60 @@ class SavegameThread(QtCore.QThread):
         return html
 
 
+#%% QTableView model
+class IngrTable(QtCore.QAbstractTableModel):
+    def __init__(self, ingrs=[], parent=None):
+        super(IngrTable, self).__init__(parent)
+        self.ingrs = ingrs
+        self.layoutChanged.emit()
+        self.headers = [self.tr("Name"),
+                        self.tr("#"),
+                        self.tr("Value"),
+                        self.tr("Weight"),
+                        self.tr("FormID")]
+
+    def rowCount(self, parent):
+        return len(self.ingrs)
+
+    def columnCount(self, parent):
+        return len(self.headers)
+
+    def addItem(self, formid, count):
+        ingr = db['INGR'][formid]
+        self.ingrs.append((ingr.FullName, count, ingr.Value, ingr.Weight,
+                           "{:08X}".format(formid)))
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        elif role != QtCore.Qt.DisplayRole:
+            return None
+        return self.ingrs[index.row()][index.column()]
+
+    def headerData(self, col, orientation, role):
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            return self.headers[col]
+        return None
+
+    def sort(self, Ncol, order):
+        """Sort table by given column number.
+        """
+        self.layoutAboutToBeChanged.emit()
+#        self.emit(SIGNAL("layoutAboutToBeChanged()"))
+        self.ingrs = sorted(self.ingrs, key=operator.itemgetter(Ncol))
+        if order == QtCore.Qt.DescendingOrder:
+            self.ingrs.reverse()
+        self.layoutChanged.emit()
+#        self.emit(SIGNAL("layoutChanged()"))
+
+    def clear(self):
+        self.layoutAboutToBeChanged.emit()
+        self.ingrs = []
+        self.layoutChanged.emit()
+
+
+
+
 #%% Main window class
 class WndMain(QtWidgets.QMainWindow):
     ### Initialization
@@ -183,6 +242,7 @@ class WndMain(QtWidgets.QMainWindow):
         self.thread.newJob.connect(self.on_thread_newJob)
         self.thread.jobStatus.connect(self.on_thread_jobStatus)
         self.thread.generalData.connect(self.on_thread_generalData)
+        self.thread.inventoryItem.connect(self.on_thread_inventoryItem)
         self.thread.start()
         savegames = savegame.getSaveGames()
         # Sort by last modified time first
@@ -211,6 +271,8 @@ class WndMain(QtWidgets.QMainWindow):
         self.progressCancel.setText(self.tr("Cancel"))
         self.progressCancel.setEnabled(False)
         statusBar.addPermanentWidget(self.progressCancel, 0)
+        self.tableIngrModel = IngrTable([], self.tableIngr)
+        self.tableIngr.setModel(self.tableIngrModel)
         self.show()
 
     ### Function overrides:
@@ -249,6 +311,7 @@ class WndMain(QtWidgets.QMainWindow):
             self.progressCancel.setEnabled(False)
             self.statusBar().clearMessage()
         elif job == 'savegame':
+            self.tableIngr.model().clear()
             self.statusBar().showMessage(self.tr("Loading savegame..."))
             self.progressBar.setMaximum(maximum)
 
@@ -259,6 +322,12 @@ class WndMain(QtWidgets.QMainWindow):
     @QtCore.Slot(str)
     def on_thread_generalData(self, html):
         self.textGeneral.setHtml(html)
+
+    @QtCore.Slot(int, int)
+    def on_thread_inventoryItem(self, count, formid):
+#        ingr = skyrimdata.db['INGR'][formid]
+#        row = (QtWidgets.QTableWidgetItem()
+        self.tableIngr.model().addItem(formid, count)
 
 
 #%% Main execution

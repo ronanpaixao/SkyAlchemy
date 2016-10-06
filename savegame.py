@@ -160,6 +160,12 @@ class Savegame(object):
             elif formid in RefID.createdid:
                 RefID.formid[i+1] = RefID.createdid[formid]
 
+    def player_ingrs(self):
+        for inv_item in self.d['inventory']:
+            if (inv_item.item.type not in {'C', 'F'} and
+              inv_item.item.name.type == "INGR"):
+                yield (inv_item.itemcount, inv_item.item.value)
+
 
 #%%
 def getSaveGames():
