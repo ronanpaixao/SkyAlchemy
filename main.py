@@ -199,6 +199,8 @@ class IngrTable(QtCore.QAbstractTableModel):
     def headerData(self, col, orientation, role):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return self.headers[col]
+        if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.DisplayRole:
+            return col + 1
         return None
 
     def sort(self, Ncol, order):
