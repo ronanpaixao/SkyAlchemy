@@ -208,7 +208,7 @@ class IngrTable(QtCore.QAbstractTableModel):
         """
         self.layoutAboutToBeChanged.emit()
 #        self.emit(SIGNAL("layoutAboutToBeChanged()"))
-        self.ingrs = sorted(self.ingrs, key=operator.itemgetter(Ncol))
+        self.ingrs = sorted(self.ingrs, key=operator.itemgetter(Ncol + 1))
         if order == QtCore.Qt.DescendingOrder:
             self.ingrs.reverse()
         self.layoutChanged.emit()
