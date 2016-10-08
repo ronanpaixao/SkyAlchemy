@@ -35,25 +35,25 @@ def alchemistPerk(perks=[]):
 def physicianPerk(mgef, perks=[]):
     physPerk = 0x58215 in perks
     kwda = set(mgef.KWDA)
-    if physPerk and kwda.isdisjoint([0x42503, 0x42508, 0x42503]):
+    if physPerk and not kwda.isdisjoint([0x42503, 0x42508, 0x42503]):
         return 25
     return 0
 
 
 def benefactorPerk(mgef, making, perks=[]):
     beneficial = 0xF8A4E
-    benefactorPerk = 0x58216 in perks
+    benefactor_perk = 0x58216 in perks
     kwda = set(mgef.KWDA)
-    if benefactorPerk and making=="potion" and beneficial in kwda:
+    if benefactor_perk and making=="potion" and beneficial in kwda:
         return 25
     return 0
 
 
 def poisonerPerk(mgef, making, perks=[]):
     harmful = 0x42509
-    poisonerPerk = 0x58217 in perks
+    poisoner_perk = 0x58217 in perks
     kwda = set(mgef.KWDA)
-    if poisonerPerk and making=="poison" and harmful in kwda:
+    if poisoner_perk and making=="poison" and harmful in kwda:
         return 25
     return 0
 
@@ -98,9 +98,12 @@ class Recipe(object):
                                       effect_order[0].MGEF.FullName)
         effect_order = copy.deepcopy(effect_order)
         valuesum = 0.
+        making = effect_order[0].MGEF.alch_type
         for effect in effect_order:
+            if 0x5821d in perks and effect.MGEF.alch_type != making:
+                continue  # skip if Purity perk
             mgef = effect.MGEF
-            pf = powerFactor(mgef, effect_order[0].MGEF.alch_type, alch_skill, fortify_alch, perks)
+            pf = powerFactor(mgef, making, alch_skill, fortify_alch, perks)
             mag = round(effect.Magnitude * (pf if mgef.MGEFflags.b.PowerAffectsMagnitude else 1))
             dur = round(effect.Duration * (pf if mgef.MGEFflags.b.PowerAffectsDuration else 1))
             magfact = mag if mag > 0 else 1
@@ -131,7 +134,7 @@ class RecipeFactory(object):
         ingrs.sort(key=lambda x: x.Value, reverse=True)
         self._ingrs = ingrs
 
-    def calcRecipes(self, alch_skill, fortify_alch=0, perks=[], calc2=True, calc3=True):
+    def calcRecipesIter(self, alch_skill, fortify_alch=0, perks=[], calc2=True, calc3=True):
         if calc2 and calc3:
             ingrs = copy.copy(self._ingrs)
             ingrs.append(None)
@@ -144,9 +147,14 @@ class RecipeFactory(object):
             calc_n = 3
         else:
             raise ValueError("One of calc2 or calc3 must be True")
-        recipes = []
         for ingr_comb in combinations(ingrs, calc_n):
             recipe = Recipe(alch_skill, fortify_alch, perks, list(ingr_comb))
+            yield recipe
+
+    def calcRecipes(self, alch_skill, fortify_alch=0, perks=[], calc2=True, calc3=True):
+        recipes = []
+        for recipe in self.calcRecipesIter(alch_skill, fortify_alch=0, perks=[],
+                                           calc2=True, calc3=True):
             if recipe.valid:
                 recipes.append(recipe)
         recipes.sort(key=lambda x: x.Value, reverse=True)
@@ -168,7 +176,12 @@ def test_alchemy():
             red = ingr
         elif ingr.FullName == "Blue Mountain Flower":
             blue = ingr
+        elif ingr.FullName == "Frost Salts":
+            frost = ingr
+        elif ingr.FullName == "Fire Salts":
+            fire = ingr
 
+    # Poison of Paralysis
     pp = Recipe(49, ingrs=[bh, imp, ss])
     assert pp.valid == True
     assert pp.Name == "Poison of Paralysis"
@@ -177,12 +190,24 @@ def test_alchemy():
     assert len(pp.effects) == 3
     assert [e.Description for e in pp.effects]
 
+    # Potion of Restore Magicka
+    perks60 = [0xc07cb, 0x58215, 0x58216, 0x58217, 0x5821d]
+    prm = Recipe(100, ingrs=[frost, fire, None], perks=perks60)
+    assert prm.valid == True
+    assert prm.Name == "Potion of Restore Magicka"
+    assert prm.Value == 69.0
+    assert [e.Value for e in prm.effects] == [69.0]
+    assert len(prm.effects) == 1
+    assert [e.Description for e in prm.effects]
+
+    # Invalid recipes
     ir = Recipe(100)
     assert ir.valid == False
 
     ir = Recipe(100, ingrs=[red, blue])
     assert ir.valid == False
 
+    # Recipe factory
     rf = RecipeFactory([bh, imp, ss])
     rf.calcRecipes(49)
     assert rf.ingrs == [bh, ss, imp]
