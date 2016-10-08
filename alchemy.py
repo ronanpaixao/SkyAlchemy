@@ -153,8 +153,8 @@ class RecipeFactory(object):
 
     def calcRecipes(self, alch_skill, fortify_alch=0, perks=[], calc2=True, calc3=True):
         recipes = []
-        for recipe in self.calcRecipesIter(alch_skill, fortify_alch=0, perks=[],
-                                           calc2=True, calc3=True):
+        for recipe in self.calcRecipesIter(alch_skill, fortify_alch, perks,
+                                           calc2, calc3):
             if recipe.valid:
                 recipes.append(recipe)
         recipes.sort(key=lambda x: x.Value, reverse=True)
@@ -217,4 +217,11 @@ def test_alchemy():
                                             'Poison of Paralysis',
                                             'Poison of Lingering Damage Health',
                                             'Potion of Fortify Block']
+
+    rf = RecipeFactory([frost, fire])
+    rf.calcRecipes(100, perks=perks60)
+    assert rf.ingrs == [frost, fire]
+    assert len(rf.recipes) == 1
+    assert [r.Value for r in rf.recipes] == [69.0]
+    assert [r.Name for r in rf.recipes] == ['Potion of Restore Magicka']
 
