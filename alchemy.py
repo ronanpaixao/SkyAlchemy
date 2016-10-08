@@ -88,7 +88,7 @@ class Recipe(object):
         effect_order = sorted([ef[0] for ef in effects.values()],
                               key=lambda x: x.Value,
                               reverse=True)
-        if len(effect_order):
+        if 0 < len(effect_order) >= len(ingrs) - 1:
             self.valid = True
         else:
             self.valid = False
@@ -99,8 +99,10 @@ class Recipe(object):
         effect_order = copy.deepcopy(effect_order)
         valuesum = 0.
         making = effect_order[0].MGEF.alch_type
+        del_effect = []
         for effect in effect_order:
             if 0x5821d in perks and effect.MGEF.alch_type != making:
+                del_effect.append(effect)
                 continue  # skip if Purity perk
             mgef = effect.MGEF
             pf = powerFactor(mgef, making, alch_skill, fortify_alch, perks)
@@ -112,6 +114,9 @@ class Recipe(object):
             valuesum += value
             effect.Magnitude = mag
             effect.Duration = dur
+
+        for effect in del_effect:
+            effect_order.remove(effect)
 
         self.Value = valuesum
         self.effects = effect_order
@@ -180,6 +185,10 @@ def test_alchemy():
             frost = ingr
         elif ingr.FullName == "Fire Salts":
             fire = ingr
+        elif ingr.FullName == "Bear Claws":
+            bear = ingr
+        elif ingr.FullName == "Rock Warbler Egg":
+            rock = ingr
 
     # Poison of Paralysis
     pp = Recipe(49, ingrs=[bh, imp, ss])
@@ -199,6 +208,17 @@ def test_alchemy():
     assert [e.Value for e in prm.effects] == [69.0]
     assert len(prm.effects) == 1
     assert [e.Description for e in prm.effects]
+
+    # Poison of Damage Magicka Regen
+    pdmr = Recipe(100, ingrs=[bear, blue, rock], perks=perks60)
+    assert pdmr.valid == True
+    assert pdmr.Name == "Poison of Damage Magicka Regen"
+    assert pdmr.Value == 568
+    assert [e.Value for e in pdmr.effects] == [568.0]
+    assert len(pdmr.effects) == 1
+    assert [e.Description for e in pdmr.effects] == [
+        "Decrease the target's Magicka regeneration by 100.0% for 60.0 seconds."]
+
 
     # Invalid recipes
     ir = Recipe(100)
@@ -229,4 +249,12 @@ def test_alchemy():
         assert recipe.Value == 69.0
         assert recipe.Name == 'Potion of Restore Magicka'
 
-
+    rf = RecipeFactory([bear, blue, rock])
+    rf.calcRecipes(100, perks=perks60)
+    assert rf.ingrs == [bear, blue, rock]
+    assert len(rf.recipes) == 4
+    assert [r.Value for r in rf.recipes] == [568, 568, 253, 57]
+    assert [r.Name for r in rf.recipes] == ['Poison of Damage Magicka Regen',
+                                            'Poison of Damage Magicka Regen',
+                                            'Potion of Fortify One-handed',
+                                            'Potion of Restore Health']
