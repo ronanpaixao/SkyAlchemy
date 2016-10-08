@@ -224,4 +224,9 @@ def test_alchemy():
     assert len(rf.recipes) == 1
     assert [r.Value for r in rf.recipes] == [69.0]
     assert [r.Name for r in rf.recipes] == ['Potion of Restore Magicka']
+    for recipe in rf.calcRecipesIter(100, perks=perks60):
+        assert recipe.ingrs == [frost, fire]
+        assert recipe.Value == 69.0
+        assert recipe.Name == 'Potion of Restore Magicka'
+
 
