@@ -18,6 +18,7 @@ import os.path as osp
 import subprocess
 import ctypes
 import logging
+from importlib import reload
 reload(logging)  # Needed inside Spyder IDE
 import argparse
 import base64
@@ -129,7 +130,7 @@ class SavegameThread(QtCore.QThread):
                 sg.populate_ids()
                 html = self.dict2html(sg.d)
                 self.sg = sg
-                self.generalData.emit(html.encode("ascii", "xmlcharrefreplace"))
+                self.generalData.emit(html.encode("ascii", "xmlcharrefreplace").decode())
                 for count, formid in sg.player_ingrs():
                     self.inventoryItem.emit(count, formid)
                 self.newJob.emit("", 0)
@@ -164,6 +165,8 @@ class SavegameThread(QtCore.QThread):
 
     def dict2html(self, dic):
         template_filename = 'general_'+QtCore.QLocale().name()+'.html'
+        if not osp.exists(osp.join(frozen('data'), template_filename)):
+            template_filename = 'general_en_US.html'
         buf = BytesIO()
         dic['screenshotImage'].save(buf, format="BMP")
         template = self.env.get_template(template_filename)
@@ -176,10 +179,11 @@ class SavegameThread(QtCore.QThread):
                 type_ = self.inv_types.get(inv_item.item.name.type,
                                            self.inv_types['Other'])
                 inventory[type_].append((item_ref.FullName,
-                                         item_ref.Value,
-                                         item_ref.Weight,
+                                         getattr(item_ref, "Value", 0.0),
+                                         getattr(item_ref, "Weight", 0.0),
                                          inv_item.itemcount))
-                inventory_weight[type_] += item_ref.Weight * inv_item.itemcount
+                inventory_weight[type_] += (getattr(item_ref, "Weight", 0.0) * 
+                                            inv_item.itemcount)
         for item_list in inventory.values():
             item_list.sort()
         total_weight = sum(inventory_weight.values())
@@ -461,6 +465,8 @@ class WndMain(QtWidgets.QMainWindow):
         formid = self.tableIngrModel.ingrs[selected.indexes()[0].row()][0]
         ingr = skyrimdata.db['INGR'][formid]
         template_filename = 'ingr_'+QtCore.QLocale().name()+'.html'
+        if not osp.exists(osp.join(frozen('data'), template_filename)):
+            template_filename = 'ingr_en_US.html'
         template = self.env.get_template(template_filename)
         val_weight = ingr.Value/ingr.Weight
         count = self.tableIngrModel.ingrs[selected.indexes()[0].row()][2]

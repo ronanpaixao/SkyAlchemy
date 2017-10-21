@@ -13,7 +13,7 @@ from __future__ import unicode_literals
 
 import struct
 from collections import OrderedDict
-from cStringIO import StringIO
+from io import BytesIO
 import os
 import os.path as osp
 import ctypes
@@ -46,11 +46,11 @@ class Savegame(object):
             # File
             d['magic'] = f.read(13)
             yield f.tell()
-            if d['magic'] != 'TESV_SAVEGAME':
+            if d['magic'] != b'TESV_SAVEGAME':
                 raise AssertionError("Incorrect magic in file header")
             d['headerSize'] = unpack("uint32", f)
             # Header
-            header = StringIO(f.read(d['headerSize']))
+            header = BytesIO(f.read(d['headerSize']))
             d['version'] = unpack("uint32", header)
             if not 7 <= d['version'] <= 9:
                 raise AssertionError("Only versions 7 to 9 are supported")
@@ -77,7 +77,7 @@ class Savegame(object):
             d['formVersion'] = unpack("uint8", f)
             d['pluginInfoSize'] = unpack("uint32", f)
             # Plugin
-            plugin = StringIO(f.read(d['pluginInfoSize']))
+            plugin = BytesIO(f.read(d['pluginInfoSize']))
             d['pluginCount'] = unpack("uint8", plugin)
             d['plugins'] = [unpack("wstring", plugin)
                             for i in range(d['pluginCount'])]
@@ -139,7 +139,7 @@ class Savegame(object):
             ukt3count = unpack("uint32", f)
             assert(len(f.read()) == ukt3count)
             # EOF
-            assert(f.read() == "")
+            assert(f.read() == b"")
             yield f.tell()
             # Inventory
             for cf in d['changeforms']:

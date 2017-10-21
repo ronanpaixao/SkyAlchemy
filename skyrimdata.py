@@ -15,8 +15,8 @@ import sys
 import os
 import os.path as osp
 import re
-import cPickle
-from cStringIO import StringIO
+import pickle
+from io import BytesIO
 
 
 #%% Data records to store
@@ -52,7 +52,8 @@ def getSteamLibraryFolders():
 
 def getSkyrimFolder(folders):
     for folder in folders:
-        if osp.exists(osp.join(folder, "SteamApps")):
+        folderpath = osp.join(folder, "SteamApps")
+        if osp.exists(folderpath) and osp.exists(osp.join(folder, "SteamApps", "common")):
             if "Skyrim" in os.listdir(osp.join(folder, "SteamApps", "common")):
                 return osp.join(folder, "SteamApps", "common", "Skyrim")
 
@@ -77,7 +78,7 @@ def extract_strings(filename):
             i, str_count, i/str_count*100))
         strings_dir.append(strdir(f))
 
-    data = StringIO(f.read(dataSize))
+    data = BytesIO(f.read(dataSize))
     f.close()
     if filename.lower().endswith(".strings"):
         for i, (id_, offset) in enumerate(strings_dir):
@@ -85,36 +86,38 @@ def extract_strings(filename):
                 i, str_count, i/str_count*100))
             data.seek(offset)
             strings[id_] = unpack("zstring", data)
-    else:  # .dlstrings, .ilstrings
-        for i, (id_, offset) in enumerate(strings_dir):
-            print("Reading string: {}/{} = {:0.2f}".format(
-                i, str_count, i/str_count*100))
-            data.seek(offset + 4)  # ignore lenght
-            strings[id_] = unpack("zstring", data)
+#    else:  # .dlstrings, .ilstrings
+#        for i, (id_, offset) in enumerate(strings_dir):
+#            print("Reading string: {}/{} = {:0.2f}".format(
+#                i, str_count, i/str_count*100))
+#            data.seek(offset + 4)  # ignore lenght
+#            strings[id_] = unpack("zstring", data)
     return strings
 
 
-__lstrings_file = "lstrings.pkl"
-__data_file = "data.pkl"
+__lstrings_file = osp.join("data", "lstrings.pkl")
+__data_file = osp.join("data", "data.pkl")
 def loadData():
     """load data from data files.
 
     This should be only done once per program, for performance.
     """
+    if (not osp.exists(__data_file)) or (not osp.exists(__lstrings_file)):
+        extractData()
+        
     with open(__data_file, 'rb') as f:
-        db.update(cPickle.load(f))
+        db.update(pickle.load(f))
     with open(__lstrings_file, 'rb') as f:
-        lstrings.update(cPickle.load(f))
+        lstrings.update(pickle.load(f))
 
-    for k, v in db.iteritems():
+    for k, v in db.items():
         RefID.defaultid.update(v)
-    db['unKYWD'] = {}
-    for k, v in db['KYWD'].items():
-        db['unKYWD'][v.EditorID] = k
+#    db['unKYWD'] = {}
+#    for k, v in db['KYWD'].items():
+#        db['unKYWD'][v.EditorID] = k
 
-#%% Execution
-if __name__ == "__main__":
 
+def extractData():
     folders = getSteamLibraryFolders()
     folder = getSkyrimFolder(folders)
     if folder is None:
@@ -127,7 +130,7 @@ if __name__ == "__main__":
               "to extract again.")
         if len(lstrings) == 0:
             with open(__lstrings_file, 'rb') as f:
-                lstrings.update(cPickle.load(f))
+                lstrings.update(pickle.load(f))
 
     else:
         strings_files = os.listdir(osp.join(folder, 'Data', 'Strings'))
@@ -136,8 +139,8 @@ if __name__ == "__main__":
                   strings_filename)))
             lstrings.update(extract_strings(osp.join(folder, "Data", "Strings",
                                                      strings_filename)))
-        with open(__lstrings_file, 'w') as f:
-            cPickle.dump(lstrings, f)
+        with open(__lstrings_file, 'wb') as f:
+            pickle.dump(lstrings, f)
 
     #%% ***.esm data files
 
@@ -172,9 +175,12 @@ if __name__ == "__main__":
             f.close()
 
         #%% Save data
-        with open('data.pkl', 'wb') as f:
-            cPickle.dump(db, f)
+        with open(__data_file, 'wb') as f:
+            pickle.dump(db, f)
 
+#%% Execution
+if __name__ == "__main__":
+    extractData()
         #%%
 #        print(records[27].records[0])
 #        print(db['INGR'][0x001016B3].effects)

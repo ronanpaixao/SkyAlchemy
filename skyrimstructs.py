@@ -11,7 +11,7 @@ See LICENSE for details.
 
 from __future__ import unicode_literals, division
 
-from cStringIO import StringIO
+from io import BytesIO
 import zlib
 import ctypes
 import math
@@ -208,7 +208,7 @@ def read_globalData(f):
     type_ = unpack("uint32", f)
     type_name, type_decoder = _gdata_type_names[type_]
     length = unpack("uint32", f)
-    return (type_, type_name, type_decoder(StringIO(f.read(length))))
+    return (type_, type_name, type_decoder(BytesIO(f.read(length))))
 _types["globalData"] = read_globalData
 
 
@@ -266,7 +266,7 @@ class ChangeForm(object):
         self.d = {}
 
         if self.type == 0:  # REFR
-            sdata = StringIO(data)
+            sdata = BytesIO(data)
             if self.formid.value >= 0xFF000000:
                 initialType = 5  # No hits
             elif self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_PROMOTED'] |
@@ -309,7 +309,7 @@ class ChangeForm(object):
             # Skip Explosion
 
         elif self.type == 1 and self.formid.value == 0x14:  # Player ACHR
-            sdata = StringIO(self.data)
+            sdata = BytesIO(self.data)
             if self.formid.value >= 0xFF000000:
                 initialType = 5  # No hits
             elif self.changeFlags & (_ChangeForm_flags['CHANGE_REFR_PROMOTED'] |
@@ -721,7 +721,7 @@ _types["InventoryItem"] = InventoryItem
 #%% Field
 class Field(object):
     def __init__(self, f):
-        self.type = f.read(4)
+        self.type = f.read(4).decode()
         size = unpack("uint16", f)
         self.data = f.read(size)
 
@@ -749,7 +749,7 @@ class Record(object):
 ##            self.children = children
 ##            self.data = fd.read(self.size - 24)
 #            if self.label in _read_record_types:
-#                data = StringIO(fd.read(self.size - 24))
+#                data = BytesIO(fd.read(self.size - 24))
 #            else:  # skip
 #                fd.seek(fd.tell() + self.size - 24)
 #            return
@@ -765,7 +765,7 @@ class Record(object):
             dataSize = decompSize
         else:
             data = fd.read(dataSize)
-        data = StringIO(data)
+        data = BytesIO(data)
         fields = []
         while data.tell() < dataSize:
             fields.append(Field(data))
@@ -827,6 +827,7 @@ class INGR(Record):
                 last_effect.Magnitude = unpack("float", field.data[:4])
                 last_effect.AreaOfEffect = unpack("uint32", field.data[4:8])
                 last_effect.Duration = unpack("uint32", field.data[8:])
+        if self.id == 0x3ad5d: import pdb; pdb.set_trace()
         db['INGR'][self.id] = self
 
     def __repr__(self):
@@ -858,10 +859,10 @@ class MGEF(Record):
             elif field.type == "KSIZ":
                 ksiz = unpack("uint32", field.data)
             elif field.type == "KWDA":
-                sdata = StringIO(field.data)
+                sdata = BytesIO(field.data)
                 self.KWDA = [unpack("formid", sdata) for i in range(ksiz)]
             elif field.type == "DATA":
-                fdata = StringIO(field.data)
+                fdata = BytesIO(field.data)
                 self.Flags = unpack("uint32", fdata)
                 self.BaseCost = unpack("float", fdata)
                 self.RelatedID = unpack("formid", fdata)
@@ -965,7 +966,7 @@ class ENCH(Record):
             elif field.type == "FULL":
                 self.FullName = unpack("lstring", field.data)
             elif field.type == "ENIT":
-                self.ArmorRating = unpack("EnchantedItem", StringIO(field.data))
+                self.ArmorRating = unpack("EnchantedItem", BytesIO(field.data))
             elif field.type == "EFID":
                 self.effects.append(Effect(unpack("formid", field.data)))
             elif field.type == "EFIT":
@@ -1090,7 +1091,7 @@ class BOOK(Record):
             elif field.type == "CNAM":
                 self.Description2 = unpack("lstring", field.data)
             elif field.type == "DATA":
-                sdata = StringIO(field.data)
+                sdata = BytesIO(field.data)
                 flags = unpack("uint8", sdata)
                 flag_bits = {0x1: "Teaches Skill", 0x2: "Can't be Taken",
                              0x4: "Teaches Spell", 0x8: "Read"}
@@ -1126,7 +1127,7 @@ class WEAP(Record):
             elif field.type == "CNAM":
                 self.cnam = unpack("formid", field.data)
             elif field.type == "DATA":
-                sdata = StringIO(field.data)
+                sdata = BytesIO(field.data)
                 self.BaseValue = unpack("uint32", sdata)
                 self.Weight = unpack("float", sdata)
                 self.damage = unpack("uint16", sdata)
@@ -1172,7 +1173,7 @@ class AMMO(Record):
             elif field.type == "CNAM":
                 self.cnam = unpack("formid", field.data)
             elif field.type == "DATA":
-                sdata = StringIO(field.data)
+                sdata = BytesIO(field.data)
                 self.projID = unpack("formid", sdata)
                 flags = unpack("uint32", sdata)
                 flag_bits = {0x1: "Ignores Normal Weapon Resistance",
@@ -1298,7 +1299,7 @@ class Group(object):
         if self.label in _read_record_types:  # Only read some groups
             while fd.tell() < group_end:
                 type_ = fd.read(4).decode("cp1252")
-#                data = StringIO(fd.read(self.size - 24))
+#                data = BytesIO(fd.read(self.size - 24))
 
                 if type_ == "":  # EOF
                     break
@@ -1310,7 +1311,7 @@ class Group(object):
             group_end = fd.tell() + self.size - 24
             while fd.tell() < group_end:
                 type_ = fd.read(4).decode("cp1252")
-#                data = StringIO(fd.read(self.size - 24))
+#                data = BytesIO(fd.read(self.size - 24))
 
                 if type_ == "":  # EOF
                     break

@@ -12,10 +12,10 @@ See LICENSE for details.
 from __future__ import unicode_literals
 
 import struct
-from cStringIO import StringIO
+from io import BytesIO
 from datetime import datetime
 import os.path as osp
-import cPickle
+import pickle
 
 
 #%% unpack
@@ -86,10 +86,10 @@ _types["zstring"] = zstring
 
 #%% lstring
 
-lstrings_file = "lstrings.pkl"
+lstrings_file = osp.join("data", "lstrings.pkl")
 if osp.exists(lstrings_file):
-    with open(lstrings_file, 'r') as f:
-        lstrings = cPickle.load(f)
+    with open(lstrings_file, 'rb') as f:
+        lstrings = pickle.load(f)
 else:
     lstrings = {}
 
@@ -103,7 +103,7 @@ _types["lstring"] = lstring
 #%% vsval
 def vsval(f):
     if not getattr(f, "read", False):  # Probably string
-        f = StringIO(f)
+        f = BytesIO(f)
     b1 = unpack("uint8", f)
     length = b1 & 0x3
     if length == 0:
@@ -115,7 +115,7 @@ def vsval(f):
     else:
         raise NotImplementedError("vsval type {} found: 0x{:x}".format(length, b1))
 _types["vsval"] = vsval
-assert vsval(StringIO(struct.pack("BB", 0xe1, 0x13))) == 0x4f8
+assert vsval(BytesIO(struct.pack("BB", 0xe1, 0x13))) == 0x4f8
 
 
 #%% Convert from int to vsval
