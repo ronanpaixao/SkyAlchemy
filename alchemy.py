@@ -189,6 +189,13 @@ def test_alchemy():
             bear = ingr
         elif ingr.FullName == "Rock Warbler Egg":
             rock = ingr
+        elif ingr.FullName == "Frost Mirriam":
+            mirriam = ingr
+        elif ingr.FullName == "Large Antlers":
+            lantlers = ingr
+
+    # Workaround for rare Salt Pile (0x00074A19)
+    salt = skyrimdata.db['INGR'][0x34CDF]
 
     # Poison of Paralysis
     pp = Recipe(49, ingrs=[bh, imp, ss])
@@ -218,6 +225,18 @@ def test_alchemy():
     assert len(pdmr.effects) == 1
     assert [e.Description for e in pdmr.effects] == [
         "Decrease the target's Magicka regeneration by 100.0% for 60.0 seconds."]
+
+    # Poison of Slow
+    r = Recipe(100, ingrs=[mirriam, lantlers, salt], perks=perks60)
+    r = Recipe(100, ingrs=[mirriam, lantlers, salt], perks=[])
+    assert r.valid == True
+    assert r.Name == "Poison of Slow"
+    assert r.Value == 871.0
+    assert [e.Value for e in r.effects] == [530.0, 341]
+    assert len(r.effects) == 2
+    assert [e.Description for e in r.effects] == [
+        "Target moves at 50% speed for 60 seconds.",
+        "Decrease the target's Stamina regeneration by 100% for 60 seconds."]
 
 
     # Invalid recipes

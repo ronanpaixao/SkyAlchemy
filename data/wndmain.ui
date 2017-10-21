@@ -87,6 +87,159 @@
         <attribute name="title">
          <string>Combinations</string>
         </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QGroupBox" name="groupAlch">
+           <property name="title">
+            <string>Player Alchemy skills:</string>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Alchemy skill &amp;level:</string>
+              </property>
+              <property name="buddy">
+               <cstring>spinAlchSkill</cstring>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spinAlchSkill">
+              <property name="maximum">
+               <number>100</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_3">
+              <property name="text">
+               <string>&amp;Fortify Alchemy:</string>
+              </property>
+              <property name="buddy">
+               <cstring>spinAlchFortify</cstring>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spinAlchFortify"/>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_4">
+              <property name="text">
+               <string>&amp;Perks:</string>
+              </property>
+              <property name="buddy">
+               <cstring>spinAlchemist</cstring>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spinAlchemist">
+              <property name="maximum">
+               <number>5</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Alchemist</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chkPhysician">
+              <property name="text">
+               <string>Physician</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chkBenefactor">
+              <property name="text">
+               <string>Benefactor</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chkPoisoner">
+              <property name="text">
+               <string>Poisoner</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chkPurity">
+              <property name="text">
+               <string>Purity</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QProgressBar" name="progressComb">
+             <property name="styleSheet">
+              <string notr="true">QProgressBar::chunk {
+    background-color: #06b025;
+    width: 1px;
+}
+
+QProgressBar {
+    border: 1px solid grey;
+    border-radius: 1px;
+    text-align: right;
+    background-color: #f0f0f0	;
+}</string>
+             </property>
+             <property name="maximum">
+              <number>1</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>%v/%m </string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnSearchComb">
+             <property name="text">
+              <string>&amp;Search</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QTableView" name="tableRecipes">
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
+           <attribute name="verticalHeaderShowSortIndicator" stdset="0">
+            <bool>true</bool>
+           </attribute>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
      </widget>
@@ -105,6 +258,20 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>comboSavegames</tabstop>
+  <tabstop>tabs</tabstop>
+  <tabstop>textGeneral</tabstop>
+  <tabstop>tableIngr</tabstop>
+  <tabstop>textIngr</tabstop>
+  <tabstop>spinAlchSkill</tabstop>
+  <tabstop>spinAlchFortify</tabstop>
+  <tabstop>chkPhysician</tabstop>
+  <tabstop>chkBenefactor</tabstop>
+  <tabstop>chkPoisoner</tabstop>
+  <tabstop>chkPurity</tabstop>
+  <tabstop>btnSearchComb</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

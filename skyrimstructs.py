@@ -1306,7 +1306,22 @@ class Group(object):
                 records.append(record)
             self.records = records
         else:  # skip uninteresting groups
-            fd.seek(fd.tell() + self.size - 24)
+#            fd.seek(fd.tell() + self.size - 24)
+            group_end = fd.tell() + self.size - 24
+            while fd.tell() < group_end:
+                type_ = fd.read(4).decode("cp1252")
+#                data = StringIO(fd.read(self.size - 24))
+
+                if type_ == "":  # EOF
+                    break
+                if type_ == "GRUP":
+                    fd.seek(group_end)
+                    continue
+                record = Record(fd, type_)
+                if record.id == 0x1D4EC:
+                    print(">>>>>>>>>>>>", record)
+#                records.append(record)
+#            self.records = records
     def __repr__(self):
         if self.type == "GRUP":
             return "{}:{}".format(self.type, self.label)

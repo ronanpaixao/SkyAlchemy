@@ -28,6 +28,7 @@ try:
 except ImportError:
     from Queue import PriorityQueue  # PY2
 import operator
+import math
 
 #%% Setup PyQt's v2 APIs. Must be done before importing PyQt or PySide
 import rthook
@@ -43,6 +44,7 @@ from jinja2 import Environment, FileSystemLoader
 import savegame
 import skyrimdata
 from skyrimdata import db
+import alchemy
 
 #%% Global functions
 # PyInstaller utilities
@@ -81,6 +83,7 @@ class SavegameThread(QtCore.QThread):
     jobStatus = QtCore.Signal(int)
     generalData = QtCore.Signal(str)
     inventoryItem = QtCore.Signal(int, int)
+    recipeItem = QtCore.Signal(int, alchemy.Recipe)
     def __init__(self, queue, *args, **kwargs):
         queue.put((1, 'load'))
         self.queue = queue
@@ -130,6 +133,30 @@ class SavegameThread(QtCore.QThread):
                 for count, formid in sg.player_ingrs():
                     self.inventoryItem.emit(count, formid)
                 self.newJob.emit("", 0)
+            elif job == 'combs':
+                alch_skill, fortify_alch, perks, model_ingrs = data[0]
+                n = len(model_ingrs) + 1
+                if n > 3:
+                    f = math.factorial
+                    ncombs = f(n)//(f(3)*f(n-3))
+                else:
+                    ncombs = 1
+                self.newJob.emit("combs", ncombs)
+                ingr_formids = set()
+                for formid, name, count, value, weight, hformid in model_ingrs:
+                    ingr_formids.add(formid)
+                ingrs = []
+                for ingr_id, ingr in skyrimdata.db['INGR'].items():
+                    if ingr_id in ingr_formids:
+                        ingrs.append(ingr)
+                rf = alchemy.RecipeFactory(ingrs)
+                recipe_iter = rf.calcRecipesIter(alch_skill, fortify_alch, perks)
+                for i, recipe in enumerate(recipe_iter):
+                    self.recipeItem.emit(i, recipe)
+#                    if i > 100:
+#                        break
+                self.newJob.emit("", 0)
+
 
     def stop(self):
         self.running = False
@@ -178,10 +205,10 @@ class IngrTable(QtCore.QAbstractTableModel):
         self.sort_col = 0
         self.sort_order = QtCore.Qt.AscendingOrder
 
-    def rowCount(self, parent):
+    def rowCount(self, parent=None):
         return len(self.ingrs)
 
-    def columnCount(self, parent):
+    def columnCount(self, parent=None):
         return len(self.headers)
 
     def addItem(self, formid, count):
@@ -225,6 +252,74 @@ class IngrTable(QtCore.QAbstractTableModel):
         self.layoutChanged.emit()
 
 
+#%% QTableView model
+class RecipeTable(QtCore.QAbstractTableModel):
+    def __init__(self, recipes=[], parent=None):
+        super(RecipeTable, self).__init__(parent)
+        self.recipes = recipes
+        self.layoutChanged.emit()
+        self.headers = [self.tr("Name"),
+                        self.tr("Value"),
+                        self.tr("Weight"),
+                        self.tr("Ingredients"),
+                        self.tr("Effects")]
+        self.sort_col = 0
+        self.sort_order = QtCore.Qt.AscendingOrder
+
+    def rowCount(self, parent=None):
+        return len(self.recipes)
+
+    def columnCount(self, parent=None):
+        return len(self.headers)
+
+    def addItem(self, recipe):
+#        self.layoutAboutToBeChanged.emit()
+        effects = ', '.join(["{}: {}".format(ef.MGEF.FullName, ef.Description)
+                             for ef in recipe.effects])
+        ingrs = ', '.join([ingr.FullName for ingr in recipe.ingrs])
+        self.recipes.append((recipe, recipe.Name, recipe.Value, "?", ingrs,
+                             effects))
+#        self.sort(self.sort_col, self.sort_order)
+#        self.layoutChanged.emit()
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        elif role != QtCore.Qt.DisplayRole:
+            return None
+        return self.recipes[index.row()][index.column() + 1]
+
+    def headerData(self, col, orientation, role):
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            return self.headers[col]
+        if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.DisplayRole:
+            return col + 1
+        return None
+
+    def resort(self):
+        self.layoutAboutToBeChanged.emit()
+        self.sort(self.sort_col, self.sort_order)
+        self.layoutChanged.emit()
+
+    def sort(self, Ncol, order):
+        """Sort table by given column number.
+        """
+        self.sort_col = Ncol
+        self.sort_order = order
+        self.layoutAboutToBeChanged.emit()
+#        self.emit(SIGNAL("layoutAboutToBeChanged()"))
+        self.recipes = sorted(self.recipes, key=operator.itemgetter(Ncol + 1))
+        if order == QtCore.Qt.DescendingOrder:
+            self.recipes.reverse()
+        self.layoutChanged.emit()
+#        self.emit(SIGNAL("layoutChanged()"))
+
+    def clear(self):
+        self.layoutAboutToBeChanged.emit()
+        self.recipes = []
+        self.layoutChanged.emit()
+
+
 #%% Main window class
 class WndMain(QtWidgets.QMainWindow):
     ### Initialization
@@ -250,6 +345,7 @@ class WndMain(QtWidgets.QMainWindow):
         self.thread.jobStatus.connect(self.on_thread_jobStatus)
         self.thread.generalData.connect(self.on_thread_generalData)
         self.thread.inventoryItem.connect(self.on_thread_inventoryItem)
+        self.thread.recipeItem.connect(self.on_thread_recipeItem)
         self.thread.start()
         savegames = savegame.getSaveGames()
         # Sort by last modified time first
@@ -264,6 +360,7 @@ class WndMain(QtWidgets.QMainWindow):
 #            self.open_savegame(savegames[0])
         # Setup Jinja templating
         self.env = Environment(loader=FileSystemLoader(frozen('data')))
+        self.recipes = []
 
 
     def initUI(self):
@@ -280,11 +377,19 @@ class WndMain(QtWidgets.QMainWindow):
         self.progressCancel.setText(self.tr("Cancel"))
         self.progressCancel.setEnabled(False)
         statusBar.addPermanentWidget(self.progressCancel, 0)
+        # Table models
         self.tableIngrModel = IngrTable([], self.tableIngr)
         self.tableIngr.setModel(self.tableIngrModel)
         self.tableIngr.selectionModel().selectionChanged.connect(
             self.on_tableIngr_selectionChanged)
         self.tableIngr.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+        self.tableRecipeModel = RecipeTable([], self.tableRecipes)
+        self.tableRecipes.setModel(self.tableRecipeModel)
+#        self.tableRecipes.selectionModel().selectionChanged.connect(
+#            self.on_tableRecipes_selectionChanged)
+        self.tableRecipes.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
         self.show()
 
     ### Function overrides:
@@ -324,7 +429,14 @@ class WndMain(QtWidgets.QMainWindow):
             self.statusBar().clearMessage()
         elif job == 'savegame':
             self.tableIngr.model().clear()
+            self.progressComb.setValue(0)
             self.statusBar().showMessage(self.tr("Loading savegame..."))
+            self.progressBar.setMaximum(maximum)
+        elif job == 'combs':
+            self.recipes = set()
+            self.progressComb.setValue(0)
+            self.statusBar().showMessage(self.tr("Combining ingredients..."))
+            self.progressComb.setMaximum(maximum)
             self.progressBar.setMaximum(maximum)
 
     @QtCore.Slot(int)
@@ -337,7 +449,12 @@ class WndMain(QtWidgets.QMainWindow):
 
     @QtCore.Slot(int, int)
     def on_thread_inventoryItem(self, count, formid):
-        self.tableIngr.model().addItem(formid, count)
+        model = self.tableIngr.model()
+        model.addItem(formid, count)
+        n = model.rowCount() + 1
+        if n > 3:
+            f = math.factorial
+            self.progressComb.setMaximum(f(n)//(f(3)*f(n-3)))
 
     @QtCore.Slot(QtCore.QItemSelection, QtCore.QItemSelection)
     def on_tableIngr_selectionChanged(self, selected, deselected):
@@ -351,6 +468,34 @@ class WndMain(QtWidgets.QMainWindow):
         html = template.render(ingr=ingr, val_weight=val_weight, count=count,
                                weight_count=weight_count)
         self.textIngr.setHtml(html)
+
+    @QtCore.Slot()
+    def on_btnSearchComb_clicked(self):
+        self.recipes = []
+        self.tableRecipes.model().clear()
+        alch_skill = self.spinAlchSkill.value()
+        fortify_alch = self.spinAlchFortify.value()
+        perks = set([[0, 0xbe127, 0xc07ca, 0xc07cb, 0xc07cc, 0xc07cd]
+                     [self.spinAlchemist.value()]])
+        if self.chkPhysician.isChecked():
+            perks.add(0x58215)
+        if self.chkBenefactor.isChecked():
+            perks.add(0x58216)
+        if self.chkPoisoner.isChecked():
+            perks.add(0x58217)
+        if self.chkPurity.isChecked():
+            perks.add(0x5821d)
+        self.queue.put((4, 'combs', [alch_skill, fortify_alch, perks,
+                                     self.tableIngr.model().ingrs]))
+
+    @QtCore.Slot(int, alchemy.Recipe)
+    def on_thread_recipeItem(self, i, recipe):
+        self.progressBar.setValue(i)
+        if recipe.valid:
+            model = self.tableRecipes.model()
+            model.addItem(recipe)
+            self.recipes.add(recipe)
+            self.progressComb.setValue(len(self.recipes))
 
 
 #%% Main execution
