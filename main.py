@@ -188,7 +188,7 @@ class SavegameThread(QtCore.QThread):
             item_list.sort()
         total_weight = sum(inventory_weight.values())
         html = template.render(d=dic, screenshotData=
-                               base64.b64encode(buf.getvalue()),
+                               base64.b64encode(buf.getvalue()).decode(),
                                inventory=inventory,
                                inventory_weight=inventory_weight,
                                total_weight=total_weight)
